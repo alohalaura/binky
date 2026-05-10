@@ -50,7 +50,12 @@ export function AuthProvider({ children }) {
       signInWithGoogle: ({ redirectTo } = {}) =>
         supabase.auth.signInWithOAuth({
           provider: 'google',
-          options: redirectTo ? { redirectTo } : undefined,
+          options: {
+            ...(redirectTo ? { redirectTo } : {}),
+            queryParams: {
+              prompt: 'select_account',
+            },
+          },
         }),
       signOut: () => supabase.auth.signOut(),
     }),
