@@ -1,15 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useLocation } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { useAuth } from '../auth/authContext'
+import { supabase } from '../lib/supabase'
 
 const POST_LOGIN_REDIRECT_KEY = 'post_login_redirect'
 
 export function Login() {
-  const { session, signInWithGoogle } = useAuth()
+  const { session, loading, signInWithGoogle } = useAuth()
   const location = useLocation()
   const [serverError, setServerError] = useState('')
+  const codeExchangeTried = useRef(false)
 
   useEffect(() => {
     const url = new URL(window.location.href)
@@ -24,6 +26,32 @@ export function Login() {
       window.history.replaceState(window.history.state, '', url.pathname)
     }
   }, [])
+
+  useEffect(() => {
+    if (loading || session || codeExchangeTried.current) return
+    const code = new URLSearchParams(window.location.search).get('code')
+    if (!code) return
+
+    codeExchangeTried.current = true
+    let cancelled = false
+    ;(async () => {
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+      if (cancelled) return
+      if (error) {
+        setServerError(error.message)
+        return
+      }
+      if (data.session) {
+        const u = new URL(window.location.href)
+        u.searchParams.delete('code')
+        u.searchParams.delete('state')
+        window.history.replaceState(window.history.state, '', `${u.pathname}${u.search}${u.hash}`)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [loading, session])
 
   const from = location.state?.from || '/'
   const storedFrom = localStorage.getItem(POST_LOGIN_REDIRECT_KEY)
