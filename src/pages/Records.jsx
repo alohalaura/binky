@@ -841,7 +841,7 @@ export function Records({ defaultOpen = false }) {
         type="button"
         onClick={() => setDrawerOpen(true)}
         className={cx(
-          'fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full bg-lavender text-white shadow-lg',
+          'fixed bottom-28 right-6 z-50 h-14 w-14 rounded-full bg-lavender text-white shadow-lg',
           'hover:brightness-95',
         )}
         aria-label="Add new record"

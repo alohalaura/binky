@@ -325,7 +325,7 @@ export function Symptoms({ defaultOpen = false }) {
       <button
         type="button"
         className={cx(
-          'fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full bg-lavender text-white shadow-lg',
+          'fixed bottom-28 right-6 z-50 h-14 w-14 rounded-full bg-lavender text-white shadow-lg',
           !activeBunnyId ? 'opacity-60' : 'hover:brightness-95',
         )}
         onClick={() => {
