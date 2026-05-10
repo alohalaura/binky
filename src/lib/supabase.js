@@ -1,15 +1,18 @@
-import { createBrowserClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 
 const url = import.meta.env.VITE_SUPABASE_URL
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 /**
- * Cookie-based auth storage (chunked + base64url) so PKCE `code_verifier` survives
- * the OAuth redirect. Plain localStorage often loses it; @supabase/ssr matches hosted docs.
+ * Implicit grant: session tokens are delivered in the URL hash after Google redirects
+ * back—no PKCE code_verifier in storage. PKCE failed reliably on this app even when
+ * the start/return origin matched (cookie + storage approaches). Tradeoff: tokens pass
+ * through the fragment; the client strips them on load (detectSessionInUrl).
  */
-export const supabase = createBrowserClient(url, key, {
+export const supabase = createClient(url, key, {
   auth: {
-    persistSession: true,
+    flowType: 'implicit',
     detectSessionInUrl: true,
+    persistSession: true,
   },
 })
