@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, Navigate, useLocation } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
@@ -7,9 +7,34 @@ import { useAuth } from '../auth/authContext'
 const POST_LOGIN_REDIRECT_KEY = 'post_login_redirect'
 
 export function Login() {
-  const { session, signInWithGoogle } = useAuth()
+  const { session, loading, signInWithGoogle } = useAuth()
   const location = useLocation()
   const [serverError, setServerError] = useState('')
+
+  useEffect(() => {
+    const url = new URL(window.location.href)
+    const hash = new URLSearchParams(url.hash.replace(/^#/, ''))
+    const err =
+      url.searchParams.get('error_description') ||
+      url.searchParams.get('error') ||
+      hash.get('error_description') ||
+      hash.get('error')
+    if (err) {
+      setServerError(decodeURIComponent(String(err).replace(/\+/g, ' ')))
+      window.history.replaceState(window.history.state, '', url.pathname)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (loading) return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('code') && !session) {
+      setServerError((prev) =>
+        prev ||
+        'Sign-in did not complete in this browser. Use the exact same site URL in Supabase (Authentication → URL) as in the address bar (including https), then try again.',
+      )
+    }
+  }, [loading, session])
 
   const from = location.state?.from || '/'
   const storedFrom = localStorage.getItem(POST_LOGIN_REDIRECT_KEY)
