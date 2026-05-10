@@ -5,9 +5,11 @@ export const supabase = createClient(
   import.meta.env.VITE_SUPABASE_ANON_KEY,
   {
     auth: {
-      // Must match hosted OAuth: PKCE uses ?code= + localStorage verifier.
-      // Default library option is still "implicit"; mismatch looks like "login does nothing".
-      flowType: 'pkce',
+      // PKCE stores a code_verifier in localStorage; after the Google redirect it is often
+      // missing (www vs non-www, mobile/PWA, Safari, ITP), which breaks sign-in with
+      // "PKCE code verifier not found". Implicit flow returns tokens in the URL hash instead;
+      // no verifier is required—better fit for this static Vite app without @supabase/ssr.
+      flowType: 'implicit',
       detectSessionInUrl: true,
       persistSession: true,
     },
