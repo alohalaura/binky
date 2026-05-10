@@ -616,7 +616,7 @@ export function Settings() {
   }
 
   return (
-    <main>
+    <main className="min-w-0">
       <h1 className="text-xl font-semibold">Settings</h1>
       <p className="mt-2 text-sm text-text-mid">
         Manage your bunny profiles and account.
@@ -630,8 +630,8 @@ export function Settings() {
 
       <div className="mt-6 grid gap-4">
         <Card>
-          <div className="flex items-start justify-between gap-3">
-            <div>
+          <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+            <div className="min-w-0">
               <div className="text-sm font-semibold">Bunny Management</div>
               <div className="mt-1 text-sm text-text-mid">
                 {isLoading
@@ -643,7 +643,7 @@ export function Settings() {
             </div>
             <Button
               type="button"
-              className="shrink-0 whitespace-nowrap hover:brightness-95"
+              className="shrink-0 whitespace-nowrap hover:brightness-95 sm:self-start"
               onClick={() => {
                 resetCreate()
                 setCreateModalOpen(true)
@@ -657,7 +657,7 @@ export function Settings() {
             {bunnies.map((bunny) => (
               <div
                 key={bunny.id}
-                className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 ${
+                className={`flex min-w-0 flex-col gap-3 rounded-2xl border px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3 ${
                   bunny.id === activeBunnyId
                     ? 'border-lavender bg-lavender/10'
                     : 'border-lavender-mid/30 bg-warm-white'
@@ -666,7 +666,7 @@ export function Settings() {
                 <button
                   type="button"
                   onClick={() => setActiveBunnyId(bunny.id)}
-                  className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                  className="flex min-w-0 w-full items-center gap-3 text-left sm:flex-1"
                 >
                   {bunnyPhotoUrls?.[bunny.id] ? (
                     <img
@@ -680,13 +680,13 @@ export function Settings() {
                       aria-hidden="true"
                     />
                   )}
-                  <div className="truncate text-sm font-semibold text-text-dark">
-                    {bunny.name}
+                  <div className="min-w-0 flex-1 overflow-hidden">
+                    <div className="truncate text-sm font-semibold text-text-dark">{bunny.name}</div>
+                    <div className="truncate text-xs text-text-mid">{bunny.breed || '—'}</div>
                   </div>
-                  <div className="truncate text-xs text-text-mid">{bunny.breed || '—'}</div>
                 </button>
 
-                <div className="flex items-center gap-2">
+                <div className="flex shrink-0 items-center justify-end gap-2 sm:justify-start">
                   {bunny.id === activeBunnyId ? (
                     <div className="text-xs font-semibold text-text-mid">Active</div>
                   ) : null}
@@ -720,7 +720,7 @@ export function Settings() {
 
         <Card>
           <div className="text-sm font-semibold text-text-dark">Bunhouse members</div>
-          <div className="mt-1 text-sm text-text-mid">
+          <div className="mt-1 break-words text-sm leading-relaxed text-text-mid">
             Anyone listed here can view and edit this bunhouse’s bunnies and records.
           </div>
 
@@ -730,8 +730,12 @@ export function Settings() {
             </div>
           ) : null}
 
-          <form className="mt-4 flex flex-col gap-2 sm:flex-row" onSubmit={onInviteMemberByEmail}>
+          <form
+            className="mt-4 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-stretch"
+            onSubmit={onInviteMemberByEmail}
+          >
             <Input
+              className="min-w-0 sm:flex-1"
               value={memberDraftEmail}
               onChange={(e) => setMemberDraftEmail(e.target.value)}
               placeholder="Email address (Gmail)"
@@ -771,7 +775,7 @@ export function Settings() {
               return (
                 <div
                   key={m.user_id}
-                  className="flex items-center justify-between gap-3 rounded-2xl border border-lavender-mid/30 bg-warm-white px-4 py-3"
+                  className="flex min-w-0 flex-col gap-3 rounded-2xl border border-lavender-mid/30 bg-warm-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
                 >
                   <div className="min-w-0">
                     <div className="truncate text-sm font-semibold text-text-dark">
@@ -782,7 +786,7 @@ export function Settings() {
                   </div>
                   <button
                     type="button"
-                    className={`shrink-0 rounded-full border border-lavender-mid/30 bg-warm-white px-3 py-2 text-sm font-semibold text-text-dark ${
+                    className={`shrink-0 self-end rounded-full border border-lavender-mid/30 bg-warm-white px-3 py-2 text-sm font-semibold text-text-dark sm:self-auto ${
                       memberSaving ? 'opacity-60' : 'hover:brightness-95'
                     }`}
                     disabled={memberSaving || !activeBunhouseId}
@@ -797,7 +801,9 @@ export function Settings() {
 
           <div className="mt-6 border-t border-lavender-mid/30 pt-5">
             <div className="text-sm font-semibold text-text-dark">Pending invites</div>
-            <div className="mt-1 text-sm text-text-mid">Invites are claimed when the person signs in.</div>
+            <div className="mt-1 break-words text-sm leading-relaxed text-text-mid">
+              Invites are claimed when the person signs in.
+            </div>
 
             {bunhouseInvitesError ? (
               <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
@@ -819,7 +825,7 @@ export function Settings() {
                 .map((i) => (
                   <div
                     key={i.id}
-                    className="flex items-center justify-between gap-3 rounded-2xl border border-lavender-mid/30 bg-warm-white px-4 py-3"
+                    className="flex min-w-0 flex-col gap-3 rounded-2xl border border-lavender-mid/30 bg-warm-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
                   >
                     <div className="min-w-0">
                       <div className="truncate text-sm font-semibold text-text-dark">
@@ -829,7 +835,7 @@ export function Settings() {
                     </div>
                     <button
                       type="button"
-                      className={`shrink-0 rounded-full border border-lavender-mid/30 bg-warm-white px-3 py-2 text-sm font-semibold text-text-dark ${
+                      className={`shrink-0 self-end rounded-full border border-lavender-mid/30 bg-warm-white px-3 py-2 text-sm font-semibold text-text-dark sm:self-auto ${
                         memberSaving ? 'opacity-60' : 'hover:brightness-95'
                       }`}
                       disabled={memberSaving || !activeBunhouseId}
@@ -863,14 +869,14 @@ export function Settings() {
         </Card>
 
         <Card>
-          <div className="flex items-start justify-between gap-3">
-            <div>
+          <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+            <div className="min-w-0">
               <div className="text-sm font-semibold text-text-dark">Account</div>
               <div className="mt-1 text-sm text-text-mid">Manage security and access.</div>
             </div>
             <button
               type="button"
-              className={`shrink-0 rounded-full border border-lavender-mid/30 bg-warm-white px-3 py-2 text-sm font-semibold text-text-dark ${
+              className={`shrink-0 self-start rounded-full border border-lavender-mid/30 bg-warm-white px-3 py-2 text-sm font-semibold text-text-dark ${
                 exportBusy ? 'opacity-60' : 'hover:brightness-95'
               }`}
               disabled={exportBusy || !user?.id}
@@ -887,8 +893,8 @@ export function Settings() {
           ) : null}
           {accountNotice ? (
             <div className="mt-4 rounded-2xl border border-lavender-mid/30 bg-lavender/10 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div className="text-sm text-text-dark">{accountNotice}</div>
+              <div className="flex min-w-0 items-start justify-between gap-3">
+                <div className="min-w-0 flex-1 break-words text-sm text-text-dark">{accountNotice}</div>
                 <button
                   type="button"
                   className="shrink-0 p-1 text-text-mid hover:text-text-dark"

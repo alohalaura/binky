@@ -47,10 +47,10 @@ export function BunnySwitcher() {
   }, [activeBunnyId, bunnies, setActiveBunnyId])
 
   return (
-    <div className="flex items-center gap-3">
-      <div className="relative">
+    <div className="flex min-w-0 w-full flex-col gap-2 sm:flex-row sm:w-auto sm:items-center sm:gap-3">
+      <div className="relative min-w-0 sm:shrink-0">
         <select
-          className="h-10 max-w-[12rem] appearance-none rounded-xl border border-lavender-mid/30 bg-warm-white px-3 pr-10 text-sm outline-none focus:border-lavender"
+          className="h-10 w-full min-w-0 appearance-none rounded-xl border border-lavender-mid/30 bg-warm-white px-3 pr-10 text-sm outline-none focus:border-lavender sm:max-w-[12rem]"
           value={activeBunhouseId ?? ''}
           onChange={(e) => setActiveBunhouseId(e.target.value || null)}
           disabled={bunhousesLoading || bunhouses.length === 0}
@@ -78,9 +78,9 @@ export function BunnySwitcher() {
           />
         </svg>
       </div>
-      <div className="relative">
+      <div className="relative min-w-0 sm:shrink-0">
         <select
-          className="h-10 max-w-[11rem] appearance-none rounded-xl border border-lavender-mid/30 bg-warm-white px-3 pr-10 text-sm outline-none focus:border-lavender"
+          className="h-10 w-full min-w-0 appearance-none rounded-xl border border-lavender-mid/30 bg-warm-white px-3 pr-10 text-sm outline-none focus:border-lavender sm:max-w-[11rem]"
           value={activeBunnyId ?? ''}
           onChange={(e) => setActiveBunnyId(e.target.value || null)}
           disabled={isLoading || bunnies.length === 0}

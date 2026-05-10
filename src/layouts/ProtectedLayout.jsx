@@ -114,10 +114,10 @@ export function ProtectedLayout() {
 
   return (
     <div className={isOnboarding ? '' : 'pb-24'}>
-      <div className="mx-auto max-w-4xl p-6">
+      <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
       {!isOnboarding ? (
-        <header className="flex items-start justify-between gap-4">
-          <div className="flex min-w-0 items-center gap-3">
+        <header className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+          <div className="flex min-w-0 shrink-0 items-center gap-3">
             <img
               src="/pwa-192.png"
               alt="Binky Labs logo"
@@ -132,7 +132,11 @@ export function ProtectedLayout() {
               </div>
             </div>
           </div>
-          {bunhouses.length > 0 ? <BunnySwitcher /> : null}
+          {bunhouses.length > 0 ? (
+            <div className="min-w-0 w-full sm:w-auto">
+              <BunnySwitcher />
+            </div>
+          ) : null}
         </header>
       ) : null}
 
