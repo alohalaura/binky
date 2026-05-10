@@ -4,7 +4,12 @@ import {
   precacheAndRoute,
 } from 'workbox-precaching'
 import { NavigationRoute, registerRoute } from 'workbox-routing'
-import { CacheFirst, NetworkFirst, StaleWhileRevalidate } from 'workbox-strategies'
+import {
+  CacheFirst,
+  NetworkFirst,
+  NetworkOnly,
+  StaleWhileRevalidate,
+} from 'workbox-strategies'
 import { ExpirationPlugin } from 'workbox-expiration'
 
 cleanupOutdatedCaches()
@@ -39,7 +44,14 @@ registerRoute(
   }),
 )
 
-// Supabase (runtime) so previously-read data remains available offline.
+// Auth/session/token requests must not be cached — stale 401s break login after
+// OAuth redirect (DevTools shows "401 from service worker").
+registerRoute(
+  ({ url }) => url.hostname.endsWith('supabase.co') && url.pathname.startsWith('/auth/'),
+  new NetworkOnly(),
+)
+
+// Supabase REST/Storage (runtime): cache for offline; excludes /auth/ above.
 registerRoute(
   ({ url }) => url.hostname.endsWith('supabase.co'),
   new NetworkFirst({
