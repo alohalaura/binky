@@ -3,6 +3,7 @@ import { Link, Navigate, useLocation } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { useAuth } from '../auth/authContext'
+import { rememberOAuthStartOrigin } from '../lib/oauthOrigin'
 
 const POST_LOGIN_REDIRECT_KEY = 'post_login_redirect'
 
@@ -23,6 +24,7 @@ export function Signup() {
   async function onContinueWithGoogle() {
     setServerError('')
     localStorage.setItem(POST_LOGIN_REDIRECT_KEY, from)
+    rememberOAuthStartOrigin()
 
     const { error } = await signInWithGoogle({
       redirectTo: `${window.location.origin}/login`,

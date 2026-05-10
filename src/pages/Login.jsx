@@ -3,6 +3,11 @@ import { Link, Navigate, useLocation } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { useAuth } from '../auth/authContext'
+import {
+  clearOAuthStartOrigin,
+  readOAuthStartOrigin,
+  rememberOAuthStartOrigin,
+} from '../lib/oauthOrigin'
 import { supabase } from '../lib/supabase'
 
 const POST_LOGIN_REDIRECT_KEY = 'post_login_redirect'
@@ -12,6 +17,8 @@ export function Login() {
   const location = useLocation()
   const [serverError, setServerError] = useState('')
   const codeExchangeTried = useRef(false)
+  /** If set, OAuth return landed on a different origin than where sign-in started (PKCE cannot work). */
+  const oauthReturnMismatch = useRef('')
 
   useEffect(() => {
     const url = new URL(window.location.href)
@@ -21,14 +28,31 @@ export function Login() {
       url.searchParams.get('error') ||
       hash.get('error_description') ||
       hash.get('error')
-    if (err) {
-      setServerError(decodeURIComponent(String(err).replace(/\+/g, ' ')))
-      window.history.replaceState(window.history.state, '', url.pathname)
+    const code = url.searchParams.get('code')
+
+    if (code) {
+      const started = readOAuthStartOrigin()
+      if (started && started !== window.location.origin) {
+        oauthReturnMismatch.current = started
+        clearOAuthStartOrigin()
+      }
     }
+
+    queueMicrotask(() => {
+      if (err) {
+        setServerError(decodeURIComponent(String(err).replace(/\+/g, ' ')))
+        window.history.replaceState(window.history.state, '', url.pathname)
+      } else if (oauthReturnMismatch.current) {
+        const from = oauthReturnMismatch.current
+        setServerError(
+          `Sign-in started on ${from}, but you were sent back to ${window.location.origin}. The PKCE secret is tied to where you started. In Supabase → Authentication → URL, add Redirect URLs for every host you use (including Vercel preview URLs or add a wildcard), and use the same address in the browser that is listed in Supabase.`,
+        )
+      }
+    })
   }, [])
 
   useEffect(() => {
-    if (loading || session || codeExchangeTried.current) return
+    if (loading || session || codeExchangeTried.current || oauthReturnMismatch.current) return
     const code = new URLSearchParams(window.location.search).get('code')
     if (!code) return
 
@@ -38,7 +62,32 @@ export function Login() {
       const { data, error } = await supabase.auth.exchangeCodeForSession(code)
       if (cancelled) return
       if (error) {
-        setServerError(error.message)
+        const started = readOAuthStartOrigin()
+        let msg = error.message
+        if (
+          typeof msg === 'string' &&
+          msg.includes('verifier') &&
+          started &&
+          started === window.location.origin
+        ) {
+          msg += ` If you did not change sites, try: disable extensions that block cookies, use a normal browser window, and confirm Vercel has the same VITE_SUPABASE_* env as local.`
+        }
+        if (
+          typeof msg === 'string' &&
+          msg.includes('verifier') &&
+          started &&
+          started !== window.location.origin
+        ) {
+          msg = `Started on ${started}, returned on ${window.location.origin}. Add both URLs to Supabase Redirect URLs. Original error: ${error.message}`
+        }
+        if (
+          typeof msg === 'string' &&
+          msg.includes('verifier') &&
+          !started
+        ) {
+          msg += ` If you use a Vercel preview URL, add it explicitly under Supabase → Authentication → URL → Redirect URLs (wildcard \`https://*.vercel.app/**\` is easiest).`
+        }
+        setServerError(msg)
         return
       }
       if (data.session) {
@@ -59,12 +108,14 @@ export function Login() {
 
   if (session) {
     localStorage.removeItem(POST_LOGIN_REDIRECT_KEY)
+    clearOAuthStartOrigin()
     return <Navigate to={nextPath} replace />
   }
 
   async function onContinueWithGoogle() {
     setServerError('')
     localStorage.setItem(POST_LOGIN_REDIRECT_KEY, from)
+    rememberOAuthStartOrigin()
 
     const { error } = await signInWithGoogle({
       redirectTo: `${window.location.origin}/login`,

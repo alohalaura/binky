@@ -7,7 +7,8 @@ import App from './App.jsx'
 import { AuthProvider } from './auth/AuthContext.jsx'
 import { PersistedQueryClientProvider } from './lib/queryClient.jsx'
 
-if (import.meta.env.PROD) {
+// Optional: set VITE_DISABLE_SW=true on Vercel to rule out a stale service worker during OAuth debugging.
+if (import.meta.env.PROD && import.meta.env.VITE_DISABLE_SW !== 'true') {
   registerSW({ immediate: true })
 }
 
