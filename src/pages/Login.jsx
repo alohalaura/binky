@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useLocation } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { useAuth } from '../auth/authContext'
+import { supabase } from '../lib/supabase'
 
 const POST_LOGIN_REDIRECT_KEY = 'post_login_redirect'
 
@@ -10,6 +11,7 @@ export function Login() {
   const { session, loading, signInWithGoogle } = useAuth()
   const location = useLocation()
   const [serverError, setServerError] = useState('')
+  const codeExchangeAttempted = useRef(false)
 
   useEffect(() => {
     const url = new URL(window.location.href)
@@ -26,13 +28,33 @@ export function Login() {
   }, [])
 
   useEffect(() => {
-    if (loading) return
+    if (loading || session || codeExchangeAttempted.current) return
     const params = new URLSearchParams(window.location.search)
-    if (params.get('code') && !session) {
-      setServerError((prev) =>
-        prev ||
-        'Sign-in did not complete in this browser. Use the exact same site URL in Supabase (Authentication → URL) as in the address bar (including https), then try again.',
-      )
+    const code = params.get('code')
+    if (!code) return
+
+    codeExchangeAttempted.current = true
+    let cancelled = false
+
+    ;(async () => {
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+      if (cancelled) return
+
+      if (error) {
+        setServerError(error.message)
+        return
+      }
+
+      if (data.session) {
+        const u = new URL(window.location.href)
+        u.searchParams.delete('code')
+        if (u.searchParams.has('state')) u.searchParams.delete('state')
+        window.history.replaceState(window.history.state, '', `${u.pathname}${u.search}${u.hash}`)
+      }
+    })()
+
+    return () => {
+      cancelled = true
     }
   }, [loading, session])
 
