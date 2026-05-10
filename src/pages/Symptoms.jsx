@@ -278,31 +278,6 @@ export function Symptoms({ defaultOpen = false }) {
                   >
                     Edit
                   </button>
-                  <button
-                    type="button"
-                    className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-100"
-                    onClick={async () => {
-                      setDeleteError('')
-                      if (!log?.id) return
-                      const ok = window.confirm('Delete this symptom log? This cannot be undone.')
-                      if (!ok) return
-                      const { error: delError } = await supabase
-                        .from('symptom_logs')
-                        .delete()
-                        .eq('id', log.id)
-                      if (delError) {
-                        setDeleteError(delError.message || 'Failed to delete symptom log.')
-                        return
-                      }
-                      await queryClient.invalidateQueries({
-                        queryKey: ['symptom_logs'],
-                      })
-                      await queryClient.invalidateQueries({ queryKey: ['recent_activity'] })
-                      await queryClient.invalidateQueries({ queryKey: ['timeline'] })
-                    }}
-                  >
-                    Delete
-                  </button>
                 </div>
               </div>
 
@@ -323,19 +298,21 @@ export function Symptoms({ defaultOpen = false }) {
         </div>
       </div>
 
-      <FabPortalButton
-        onClick={() => {
-          setEditTarget(null)
-          setViewTarget(null)
-          setDrawerOpen(true)
-        }}
-        disabled={!activeBunnyId}
-        aria-label="Add symptom"
-      >
-        <svg className="mx-auto h-6 w-6" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-          <path d="M10 4a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 10 4Z" />
-        </svg>
-      </FabPortalButton>
+      {!drawerOpen && !viewTarget ? (
+        <FabPortalButton
+          onClick={() => {
+            setEditTarget(null)
+            setViewTarget(null)
+            setDrawerOpen(true)
+          }}
+          disabled={!activeBunnyId}
+          aria-label="Add symptom"
+        >
+          <svg className="mx-auto h-6 w-6" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path d="M10 4a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 10 4Z" />
+          </svg>
+        </FabPortalButton>
+      ) : null}
 
       <Drawer
         title={editTarget ? 'Edit symptom' : 'Add symptom'}

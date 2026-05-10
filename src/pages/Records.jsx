@@ -806,13 +806,6 @@ export function Records({ defaultOpen = false }) {
                         >
                           Edit
                         </button>
-                        <button
-                          type="button"
-                          className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-100"
-                          onClick={() => setDeleteTarget(r)}
-                        >
-                          Delete
-                        </button>
                       </div>
                     </div>
 
@@ -838,11 +831,13 @@ export function Records({ defaultOpen = false }) {
         </div>
       ) : null}
 
-      <FabPortalButton onClick={() => setDrawerOpen(true)} aria-label="Add new record">
-        <svg className="mx-auto h-6 w-6" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-          <path d="M10 4a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 10 4Z" />
-        </svg>
-      </FabPortalButton>
+      {!drawerOpen && !viewTarget ? (
+        <FabPortalButton onClick={() => setDrawerOpen(true)} aria-label="Add new record">
+          <svg className="mx-auto h-6 w-6" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path d="M10 4a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 10 4Z" />
+          </svg>
+        </FabPortalButton>
+      ) : null}
 
       <AddRecordDrawer
         key={editTarget?.id ? `edit-${editTarget.id}` : 'create'}
@@ -914,16 +909,24 @@ export function Records({ defaultOpen = false }) {
             <Modal title="Delete record?">
               <div className="space-y-4">
                 <div className="text-sm text-text-mid">
-                  This will permanently delete the record and all files stored under:
-                  <div className="mt-1 rounded-2xl border border-lavender-mid/30 bg-warm-white p-3 font-mono text-xs text-text-dark">
-                    {user?.id}/{activeBunnyId}/medical/{deleteTarget?.id}/
+                  This permanently deletes the record and any files attached to it. You’re removing:
+                  <div className="mt-2 rounded-2xl border border-lavender-mid/30 bg-warm-white p-4">
+                    <div className="text-base font-semibold text-text-dark">
+                      {deleteTarget ? displayTitle(deleteTarget) : 'Record'}
+                    </div>
+                    <div className="mt-1 text-xs font-semibold text-text-mid">
+                      {deleteTarget ? visitPillLabel(deleteTarget) : '—'}
+                      {deleteTarget?.record_date
+                        ? ` · ${safeDateLabel(deleteTarget.record_date)}`
+                        : ''}
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center sm:justify-end">
+                <div className="flex flex-row flex-wrap items-center justify-end gap-2 sm:gap-3">
                   <button
                     type="button"
-                    className="rounded-full border border-lavender-mid/30 bg-warm-white px-4 py-3 text-sm font-semibold text-text-dark hover:brightness-95"
+                    className="shrink-0 rounded-full border border-lavender-mid/30 bg-warm-white px-4 py-3 text-sm font-semibold text-text-dark hover:brightness-95"
                     onClick={() => setDeleteTarget(null)}
                     disabled={saving}
                   >
@@ -932,7 +935,7 @@ export function Records({ defaultOpen = false }) {
                   <button
                     type="button"
                     className={cx(
-                      'rounded-full border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700',
+                      'shrink-0 rounded-full border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700',
                       saving ? 'opacity-60' : 'hover:brightness-95',
                     )}
                     disabled={saving}

@@ -116,7 +116,7 @@ export function ProtectedLayout() {
     <div className={isOnboarding ? '' : 'pb-24'}>
       <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
       {!isOnboarding ? (
-        <header className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <header className="flex min-w-0 flex-row items-center justify-between gap-2 sm:gap-4">
           <div className="flex min-w-0 shrink-0 items-center gap-3">
             <img
               src="/pwa-192.png"
@@ -133,7 +133,7 @@ export function ProtectedLayout() {
             </div>
           </div>
           {bunhouses.length > 0 ? (
-            <div className="min-w-0 w-full sm:w-auto">
+            <div className="min-w-0 shrink-0">
               <BunnySwitcher />
             </div>
           ) : null}

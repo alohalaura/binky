@@ -10,6 +10,7 @@ import { Drawer } from '../components/ui/Drawer'
 import { FabPortalButton } from '../components/ui/FabPortalButton'
 import { PrescriptionCard } from '../components/prescriptions/PrescriptionCard'
 import { PrescriptionForm } from '../components/prescriptions/PrescriptionForm'
+import { PrescriptionDetailsDrawer } from '../components/prescriptions/PrescriptionDetailsDrawer'
 import { supabase } from '../lib/supabase'
 import { useQueryClient } from '@tanstack/react-query'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -54,7 +55,10 @@ export function Prescriptions({ defaultOpen = false }) {
   const [activeTab, setActiveTab] = useState('today')
   const [drawerOpen, setDrawerOpen] = useState(() => Boolean(defaultOpen))
   const [addFormKey, setAddFormKey] = useState(() => (defaultOpen ? 1 : 0))
+  const [viewTarget, setViewTarget] = useState(null)
+  const [editTarget, setEditTarget] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
   const [completeError, setCompleteError] = useState('')
   const [completingId, setCompletingId] = useState(null)
   const [checkError, setCheckError] = useState('')
@@ -189,6 +193,51 @@ export function Prescriptions({ defaultOpen = false }) {
       }
 
       setDrawerOpen(false)
+      setEditTarget(null)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleUpdate(form) {
+    if (!user?.id) throw new Error('You must be signed in.')
+    if (!activeBunnyId) throw new Error('Please choose an active bunny first.')
+    if (!editTarget?.id) throw new Error('No prescription selected.')
+
+    setSaving(true)
+    try {
+      const updatePayload = {
+        bunny_id: activeBunnyId,
+        drug_name: form.drug_name,
+        dosage: form.dosage,
+        frequency: form.frequency,
+        start_date: form.start_date,
+        end_date: form.end_date,
+        prescribing_vet: form.prescribing_vet,
+        notes: form.notes,
+        record_id: form.record_id,
+      }
+
+      const { error: upError } = await supabase
+        .from('prescriptions')
+        .update(updatePayload)
+        .eq('id', editTarget.id)
+
+      if (upError) throw upError
+
+      await queryClient.invalidateQueries({
+        queryKey: ['prescriptions', user?.id ?? null, activeBunnyId ?? null],
+      })
+      await queryClient.invalidateQueries({
+        queryKey: ['recent_activity', user?.id ?? null, activeBunnyId ?? null],
+      })
+      await queryClient.invalidateQueries({
+        queryKey: ['timeline', user?.id ?? null, activeBunnyId ?? null],
+      })
+
+      setDrawerOpen(false)
+      setEditTarget(null)
+      setViewTarget(null)
     } finally {
       setSaving(false)
     }
@@ -309,6 +358,7 @@ export function Prescriptions({ defaultOpen = false }) {
             description="Track meds, dates, and notes so you can stay consistent and share a clean history with your vet."
             actionLabel="Add medicine"
             onAction={() => {
+              setEditTarget(null)
               setAddFormKey((k) => k + 1)
               setDrawerOpen(true)
             }}
@@ -330,6 +380,12 @@ export function Prescriptions({ defaultOpen = false }) {
         {completeError ? (
           <div className="mt-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             {completeError}
+          </div>
+        ) : null}
+
+        {deleteError ? (
+          <div className="mt-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            {deleteError}
           </div>
         ) : null}
 
@@ -492,6 +548,7 @@ export function Prescriptions({ defaultOpen = false }) {
                       prescription={p}
                       variant="active"
                       linkedRecordLabel={p.record_id ? linkedLabel(p.record_id) : null}
+                      onView={(row) => setViewTarget(row)}
                       onMarkComplete={handleMarkComplete}
                       completing={completingId === p.id}
                     />
@@ -522,6 +579,7 @@ export function Prescriptions({ defaultOpen = false }) {
                       prescription={p}
                       variant="completed"
                       linkedRecordLabel={p.record_id ? linkedLabel(p.record_id) : null}
+                      onView={(row) => setViewTarget(row)}
                     />
                   ))}
                 </div>
@@ -531,40 +589,95 @@ export function Prescriptions({ defaultOpen = false }) {
         ) : null}
       </div>
 
-      <FabPortalButton
-        onClick={() => {
-          setAddFormKey((k) => k + 1)
-          setDrawerOpen(true)
-        }}
-        disabled={!activeBunnyId}
-        aria-label="Add prescription"
-      >
-        <svg className="mx-auto h-6 w-6" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-          <path d="M10 4a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 10 4Z" />
-        </svg>
-      </FabPortalButton>
+      {!drawerOpen && !viewTarget ? (
+        <FabPortalButton
+          onClick={() => {
+            setEditTarget(null)
+            setAddFormKey((k) => k + 1)
+            setDrawerOpen(true)
+          }}
+          disabled={!activeBunnyId}
+          aria-label="Add prescription"
+        >
+          <svg className="mx-auto h-6 w-6" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path d="M10 4a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 10 4Z" />
+          </svg>
+        </FabPortalButton>
+      ) : null}
 
       <Drawer
-        title="Add prescription"
+        title={editTarget ? 'Edit prescription' : 'Add prescription'}
         open={drawerOpen}
         onClose={() => {
           if (saving) return
           setDrawerOpen(false)
+          setEditTarget(null)
           if (defaultOpen) navigate('/prescriptions', { replace: true })
         }}
       >
         <PrescriptionForm
-          key={addFormKey}
+          key={editTarget?.id ? `edit-${editTarget.id}` : `add-${addFormKey}`}
+          mode={editTarget ? 'edit' : 'create'}
           activeBunnyId={activeBunnyId}
           records={records}
           busy={saving}
-          onSave={handleAdd}
+          initialValues={editTarget}
+          onSave={async (form) => {
+            if (editTarget?.id) await handleUpdate(form)
+            else await handleAdd(form)
+          }}
           onClose={() => {
             if (saving) return
             setDrawerOpen(false)
+            setEditTarget(null)
           }}
         />
       </Drawer>
+
+      <PrescriptionDetailsDrawer
+        open={Boolean(viewTarget)}
+        onClose={() => setViewTarget(null)}
+        prescription={viewTarget}
+        linkedRecordLabel={
+          viewTarget?.record_id ? linkedLabel(viewTarget.record_id) : null
+        }
+        onEdit={() => {
+          const row = viewTarget
+          if (!row) return
+          setViewTarget(null)
+          setEditTarget(row)
+          setDrawerOpen(true)
+        }}
+        onDelete={async () => {
+          if (!viewTarget?.id || !user?.id) return
+          const ok = window.confirm(
+            'Delete this medicine entry? Logs for “given today” will be removed too. This cannot be undone.',
+          )
+          if (!ok) return
+          setDeleteError('')
+          const { error: delError } = await supabase
+            .from('prescriptions')
+            .delete()
+            .eq('id', viewTarget.id)
+          if (delError) {
+            setDeleteError(delError.message || 'Failed to delete prescription.')
+            return
+          }
+          setViewTarget(null)
+          await queryClient.invalidateQueries({
+            queryKey: ['prescriptions', user?.id ?? null, activeBunnyId ?? null],
+          })
+          await queryClient.invalidateQueries({
+            queryKey: ['prescription_administrations', user?.id ?? null, activeBunnyId ?? null],
+          })
+          await queryClient.invalidateQueries({
+            queryKey: ['recent_activity', user?.id ?? null, activeBunnyId ?? null],
+          })
+          await queryClient.invalidateQueries({
+            queryKey: ['timeline', user?.id ?? null, activeBunnyId ?? null],
+          })
+        }}
+      />
     </main>
   )
 }

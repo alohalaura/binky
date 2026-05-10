@@ -47,10 +47,10 @@ export function BunnySwitcher() {
   }, [activeBunnyId, bunnies, setActiveBunnyId])
 
   return (
-    <div className="flex min-w-0 w-full flex-col gap-2 sm:flex-row sm:w-auto sm:items-center sm:gap-3">
-      <div className="relative min-w-0 sm:shrink-0">
+    <div className="flex w-auto max-w-full flex-row flex-wrap items-center gap-2 sm:gap-3">
+      <div className="relative w-max max-w-full shrink-0">
         <select
-          className="h-10 w-full min-w-0 appearance-none rounded-xl border border-lavender-mid/30 bg-warm-white px-3 pr-10 text-sm outline-none focus:border-lavender sm:max-w-[12rem]"
+          className="box-border h-10 w-max min-w-0 max-w-[calc(100vw-5.5rem)] appearance-none rounded-xl border border-lavender-mid/30 bg-warm-white px-2 pr-8 text-xs leading-none outline-none focus:border-lavender [field-sizing:content] sm:max-w-[min(16rem,calc(100vw-8rem))] sm:px-3 sm:pr-10 sm:text-sm sm:leading-normal"
           value={activeBunhouseId ?? ''}
           onChange={(e) => setActiveBunhouseId(e.target.value || null)}
           disabled={bunhousesLoading || bunhouses.length === 0}
@@ -66,7 +66,7 @@ export function BunnySwitcher() {
           ))}
         </select>
         <svg
-          className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-mid"
+          className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-mid sm:right-3 sm:h-4 sm:w-4"
           viewBox="0 0 20 20"
           fill="currentColor"
           aria-hidden="true"
@@ -78,9 +78,9 @@ export function BunnySwitcher() {
           />
         </svg>
       </div>
-      <div className="relative min-w-0 sm:shrink-0">
+      <div className="relative w-max max-w-full shrink-0">
         <select
-          className="h-10 w-full min-w-0 appearance-none rounded-xl border border-lavender-mid/30 bg-warm-white px-3 pr-10 text-sm outline-none focus:border-lavender sm:max-w-[11rem]"
+          className="box-border h-10 w-max min-w-0 max-w-[calc(100vw-5.5rem)] appearance-none rounded-xl border border-lavender-mid/30 bg-warm-white px-2 pr-8 text-xs leading-none outline-none focus:border-lavender [field-sizing:content] sm:max-w-[min(14rem,calc(100vw-8rem))] sm:px-3 sm:pr-10 sm:text-sm sm:leading-normal"
           value={activeBunnyId ?? ''}
           onChange={(e) => setActiveBunnyId(e.target.value || null)}
           disabled={isLoading || bunnies.length === 0}
@@ -94,7 +94,7 @@ export function BunnySwitcher() {
           ))}
         </select>
         <svg
-          className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-mid"
+          className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-mid sm:right-3 sm:h-4 sm:w-4"
           viewBox="0 0 20 20"
           fill="currentColor"
           aria-hidden="true"

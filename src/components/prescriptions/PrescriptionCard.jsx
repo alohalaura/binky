@@ -68,6 +68,7 @@ export function PrescriptionCard({
   variant,
   linkedRecordLabel,
   onMarkComplete,
+  onView,
   completing = false,
 }) {
   const isActive = variant === 'active'
@@ -107,6 +108,15 @@ export function PrescriptionCard({
         </div>
 
         <div className="flex shrink-0 flex-col items-end gap-2">
+          {onView ? (
+            <button
+              type="button"
+              className="rounded-full border border-lavender-mid/30 bg-warm-white px-3 py-2 text-xs font-semibold text-text-dark hover:border-lavender"
+              onClick={() => onView(prescription)}
+            >
+              View
+            </button>
+          ) : null}
           {isActive ? (
             <button
               type="button"

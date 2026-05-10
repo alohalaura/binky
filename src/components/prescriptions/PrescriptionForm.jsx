@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { format } from 'date-fns'
 import { Input } from '../ui/Input'
 import { Button } from '../ui/Button'
@@ -32,7 +32,29 @@ function recordOptionLabel(r) {
   return [d, t].filter(Boolean).join(' · ') || 'Record'
 }
 
-export function PrescriptionForm({ activeBunnyId, records = [], busy = false, onSave, onClose }) {
+function emptyPrescriptionFields() {
+  return {
+    drugName: '',
+    dosage: '',
+    frequency: '',
+    startDate: '',
+    endDate: '',
+    noEndDate: false,
+    prescribingVet: '',
+    notes: '',
+    recordId: '',
+  }
+}
+
+export function PrescriptionForm({
+  activeBunnyId,
+  records = [],
+  busy = false,
+  mode = 'create',
+  initialValues = null,
+  onSave,
+  onClose,
+}) {
   const [drugName, setDrugName] = useState('')
   const [dosage, setDosage] = useState('')
   const [frequency, setFrequency] = useState('')
@@ -43,6 +65,33 @@ export function PrescriptionForm({ activeBunnyId, records = [], busy = false, on
   const [notes, setNotes] = useState('')
   const [recordId, setRecordId] = useState('')
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (!initialValues) {
+      const e = emptyPrescriptionFields()
+      setDrugName(e.drugName)
+      setDosage(e.dosage)
+      setFrequency(e.frequency)
+      setStartDate(e.startDate)
+      setEndDate(e.endDate)
+      setNoEndDate(e.noEndDate)
+      setPrescribingVet(e.prescribingVet)
+      setNotes(e.notes)
+      setRecordId(e.recordId)
+      return
+    }
+    setDrugName(String(initialValues.drug_name ?? '').trim())
+    setDosage(String(initialValues.dosage ?? '').trim())
+    setFrequency(String(initialValues.frequency ?? '').trim())
+    setStartDate(initialValues.start_date ? String(initialValues.start_date).slice(0, 10) : '')
+    const endRaw = initialValues.end_date ? String(initialValues.end_date).slice(0, 10) : ''
+    const ongoing = !endRaw
+    setNoEndDate(ongoing)
+    setEndDate(ongoing ? '' : endRaw)
+    setPrescribingVet(String(initialValues.prescribing_vet ?? '').trim())
+    setNotes(String(initialValues.notes ?? '').trim())
+    setRecordId(initialValues.record_id ? String(initialValues.record_id) : '')
+  }, [initialValues])
 
   const sortedRecords = useMemo(() => {
     return [...records].sort((a, b) => {
@@ -236,7 +285,7 @@ export function PrescriptionForm({ activeBunnyId, records = [], busy = false, on
 
         <div className="flex flex-wrap gap-2 pt-2">
           <Button type="submit" disabled={!canSave || busy}>
-            {busy ? 'Saving…' : 'Save prescription'}
+            {busy ? 'Saving…' : mode === 'edit' ? 'Save changes' : 'Save prescription'}
           </Button>
           <button
             type="button"
