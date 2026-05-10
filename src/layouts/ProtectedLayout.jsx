@@ -1,5 +1,5 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../auth/authContext'
 import { BunnySwitcher } from '../components/bunny/BunnySwitcher'
@@ -21,8 +21,14 @@ export function ProtectedLayout() {
   const { data: bunnies = [], isLoading: bunniesLoading } = useBunnies()
   const isOnboarding = location.pathname.startsWith('/onboarding')
 
-  useEffect(() => {
-    if (!activeBunhouseId && bunhouses.length > 0) {
+  // Persisted active bunhouse can be stale (different user, removed membership, or old dev state).
+  // Reconcile before route guards run; otherwise we query the wrong bunhouse_id, get zero bunnies, and
+  // send invitees to onboarding. (BunnySwitcher also fixes this, but only after this layout allows render.)
+  useLayoutEffect(() => {
+    if (bunhouses.length === 0) return
+    const stillValid =
+      activeBunhouseId != null && bunhouses.some((b) => b.id === activeBunhouseId)
+    if (!stillValid) {
       setActiveBunhouseId(bunhouses[0].id)
     }
   }, [activeBunhouseId, bunhouses, setActiveBunhouseId])
@@ -52,7 +58,12 @@ export function ProtectedLayout() {
           const { error: memberErr } = await supabase
             .from('bunhouse_members')
             .insert({ bunhouse_id: inv.bunhouse_id, user_id: session.user.id })
-          if (memberErr) continue
+          const dupMember =
+            memberErr?.code === '23505' ||
+            String(memberErr?.message ?? '')
+              .toLowerCase()
+              .includes('duplicate key')
+          if (memberErr && !dupMember) continue
 
           await supabase
             .from('bunhouse_invites')
@@ -90,10 +101,14 @@ export function ProtectedLayout() {
     )
   }
 
+  const activeBunhouseBelongsToUser =
+    bunhouses.length === 0 ||
+    (activeBunhouseId != null && bunhouses.some((b) => b.id === activeBunhouseId))
+
   if (
     !inviteAcceptanceSettled ||
     bunhousesLoading ||
-    (!activeBunhouseId && bunhouses.length > 0) ||
+    (bunhouses.length > 0 && !activeBunhouseBelongsToUser) ||
     bunniesLoading
   ) {
     return (
@@ -107,9 +122,7 @@ export function ProtectedLayout() {
     return <Navigate to="/onboarding" replace />
   }
 
-  if (!isOnboarding && bunnies.length === 0) {
-    return <Navigate to="/onboarding" replace />
-  }
+  /* Invited members may join a bunhouse that already has bunnies, or an empty hub; skip forcing a new bunny profile if they belong to any bunhouse. Solo new users hit onboarding via bunhouses.length === 0 above. */
   if (isOnboarding && bunnies.length > 0) {
     return <Navigate to="/" replace />
   }
