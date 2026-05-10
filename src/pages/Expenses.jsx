@@ -11,6 +11,7 @@ import { Card } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { EmptyState } from '../components/ui/EmptyState'
 import { AddExpenseDrawer } from '../components/expenses/AddExpenseDrawer'
+import { FabPortalButton } from '../components/ui/FabPortalButton'
 
 function cx(...parts) {
   return parts.filter(Boolean).join(' ')
@@ -326,19 +327,11 @@ export function Expenses({ defaultOpen = false }) {
         </div>
       ) : null}
 
-      <button
-        type="button"
-        onClick={() => setDrawerOpen(true)}
-        className={cx(
-          'fixed bottom-28 right-6 z-50 h-14 w-14 rounded-full bg-lavender text-white shadow-lg',
-          'hover:brightness-95',
-        )}
-        aria-label="Add expense"
-      >
+      <FabPortalButton onClick={() => setDrawerOpen(true)} aria-label="Add expense">
         <svg className="mx-auto h-6 w-6" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
           <path d="M10 4a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 10 4Z" />
         </svg>
-      </button>
+      </FabPortalButton>
 
       <AddExpenseDrawer
         key={editTarget?.id ? `edit-${editTarget.id}` : 'create'}

@@ -10,6 +10,7 @@ import { useRecentActivity } from '../hooks/useRecentActivity'
 import { useExpenses } from '../hooks/useExpenses'
 import { Card } from '../components/ui/Card'
 import { Drawer } from '../components/ui/Drawer'
+import { FabPortalButton } from '../components/ui/FabPortalButton'
 import { Input } from '../components/ui/Input'
 import { Button } from '../components/ui/Button'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -132,20 +133,11 @@ function HomeFab({ disabled, onAddWeight }) {
 
   return (
     <>
-      <button
-        type="button"
-        className={cx(
-          'fixed bottom-28 right-6 z-50 h-14 w-14 rounded-full bg-lavender text-white shadow-lg',
-          disabled ? 'opacity-60' : 'hover:brightness-95',
-        )}
-        aria-label="Add entry"
-        disabled={disabled}
-        onClick={() => setOpen(true)}
-      >
+      <FabPortalButton aria-label="Add entry" disabled={disabled} onClick={() => setOpen(true)}>
         <svg className="mx-auto h-6 w-6" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
           <path d="M10 4a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 10 4Z" />
         </svg>
-      </button>
+      </FabPortalButton>
 
       <Drawer
         title="Add entry"
