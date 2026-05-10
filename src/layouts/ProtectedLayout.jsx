@@ -38,10 +38,10 @@ export function ProtectedLayout() {
     setInviteAcceptanceSettled(false)
 
     async function acceptInvites() {
-      let acceptedAny = false
+      const uid = session?.user?.id ?? null
       try {
         const email = user?.email ? String(user.email).trim().toLowerCase() : ''
-        if (!session?.user?.id || !email) return
+        if (!session?.user?.id || !email || !uid) return
 
         const { data: invites, error } = await supabase
           .from('bunhouse_invites')
@@ -69,14 +69,16 @@ export function ProtectedLayout() {
             .from('bunhouse_invites')
             .update({ accepted_at: new Date().toISOString(), accepted_by: session.user.id })
             .eq('id', inv.id)
-          acceptedAny = true
-        }
-
-        if (!cancelled && acceptedAny) {
-          await queryClient.invalidateQueries({ queryKey: ['bunhouses', session.user.id] })
-          await queryClient.invalidateQueries({ queryKey: ['bunnies', session.user.id] })
         }
       } finally {
+        /* invalidateQueries alone does not block: cached [] + isLoading false sent invitees to onboarding before refetch. */
+        if (!cancelled && uid) {
+          try {
+            await queryClient.refetchQueries({ queryKey: ['bunhouses', uid] })
+          } catch {
+            /* Non-fatal: guards use whatever cache has on next paint. */
+          }
+        }
         if (!cancelled) setInviteAcceptanceSettled(true)
       }
     }
