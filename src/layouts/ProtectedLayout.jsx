@@ -10,7 +10,7 @@ import { BottomNav } from '../components/nav/BottomNav'
 import { IosAddToHomeScreenBanner } from '../components/pwa/IosAddToHomeScreenBanner'
 import { LoadingScreen } from '../components/ui/LoadingScreen.jsx'
 import { supabase } from '../lib/supabase'
-import { ensureProfileExists } from '../lib/authProfile'
+import { sweepPendingBunhouseInvitesClient } from '../lib/clientInviteAccept'
 
 export function ProtectedLayout() {
   const queryClient = useQueryClient()
@@ -41,37 +41,17 @@ export function ProtectedLayout() {
     async function acceptInvites() {
       const uid = session?.user?.id ?? null
       try {
-        const email = user?.email ? String(user.email).trim().toLowerCase() : ''
-        if (!session?.user?.id || !email || !uid) return
-
-        await ensureProfileExists(user ?? session.user)
-
-        const { data: invites, error } = await supabase
-          .from('bunhouse_invites')
-          .select('id, bunhouse_id, email, accepted_at')
-          .eq('accepted_at', null)
-          .eq('email', email)
+        if (!uid) return
         if (cancelled) return
-        if (error) return
-        if (!Array.isArray(invites) || invites.length === 0) return
 
-        for (const inv of invites) {
-          if (!inv?.bunhouse_id || !inv?.id) continue
+        /* Primary: SECURITY DEFINER RPC (migration 010). */
+        const { error: rpcErr } = await supabase.rpc('accept_pending_bunhouse_invites')
+        if (import.meta.env.DEV && rpcErr)
+          console.warn('accept_pending_bunhouse_invites', rpcErr.message)
 
-          const { error: memberErr } = await supabase
-            .from('bunhouse_members')
-            .insert({ bunhouse_id: inv.bunhouse_id, user_id: session.user.id })
-          const dupMember =
-            memberErr?.code === '23505' ||
-            String(memberErr?.message ?? '')
-              .toLowerCase()
-              .includes('duplicate key')
-          if (memberErr && !dupMember) continue
-
-          await supabase
-            .from('bunhouse_invites')
-            .update({ accepted_at: new Date().toISOString(), accepted_by: session.user.id })
-            .eq('id', inv.id)
+        /* Mop-up: no-op when RPC succeeded; catches missing migration or partial RPC failures. */
+        if (!cancelled) {
+          await sweepPendingBunhouseInvitesClient({ cancelled, uid, session, user })
         }
       } finally {
         /* invalidateQueries alone does not block: cached [] + isLoading false sent invitees to onboarding before refetch. */
