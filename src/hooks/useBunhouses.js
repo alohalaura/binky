@@ -3,22 +3,28 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../auth/authContext'
 
 async function fetchBunhouses({ userId }) {
-  const { data, error } = await supabase
+  const { data: members, error: mErr } = await supabase
     .from('bunhouse_members')
-    .select('bunhouse_id, bunhouses ( id, name, created_at )')
+    .select('bunhouse_id')
     .eq('user_id', userId)
+    .order('created_at', { ascending: true })
 
-  if (error) throw error
+  if (mErr) throw mErr
 
-  const rows = Array.isArray(data) ? data : []
-  return rows
-    .map((r) => r?.bunhouses)
-    .filter(Boolean)
-    .map((b) => ({
-      id: b.id,
-      name: b.name,
-      created_at: b.created_at,
-    }))
+  const ids = [
+    ...new Set((Array.isArray(members) ? members : []).map((r) => r?.bunhouse_id).filter(Boolean)),
+  ]
+  if (ids.length === 0) return []
+
+  const { data: houses, error: hErr } = await supabase
+    .from('bunhouses')
+    .select('id, name, created_at')
+    .in('id', ids)
+
+  if (hErr) throw hErr
+
+  const byId = Object.fromEntries((houses ?? []).map((b) => [b.id, b]))
+  return ids.map((id) => byId[id]).filter(Boolean)
 }
 
 export function useBunhouses() {

@@ -10,6 +10,7 @@ import { BottomNav } from '../components/nav/BottomNav'
 import { IosAddToHomeScreenBanner } from '../components/pwa/IosAddToHomeScreenBanner'
 import { LoadingScreen } from '../components/ui/LoadingScreen.jsx'
 import { supabase } from '../lib/supabase'
+import { ensureProfileExists } from '../lib/authProfile'
 
 export function ProtectedLayout() {
   const queryClient = useQueryClient()
@@ -42,6 +43,8 @@ export function ProtectedLayout() {
       try {
         const email = user?.email ? String(user.email).trim().toLowerCase() : ''
         if (!session?.user?.id || !email || !uid) return
+
+        await ensureProfileExists(user ?? session.user)
 
         const { data: invites, error } = await supabase
           .from('bunhouse_invites')

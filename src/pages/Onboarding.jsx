@@ -11,22 +11,11 @@ import { Input } from '../components/ui/Input'
 import { FileInput } from '../components/ui/FileInput'
 import { RadioOption } from '../components/ui/RadioOption'
 import { STORAGE_BUCKETS } from '../lib/storageBuckets'
+import { ensureProfileExists } from '../lib/authProfile'
 
 function isBucketNotFound(err) {
   const msg = String(err?.message ?? '')
   return msg.toLowerCase().includes('bucket not found')
-}
-
-async function ensureProfileExists({ user }) {
-  const { error } = await supabase.from('profiles').upsert(
-    {
-      id: user.id,
-      email: user.email ?? null,
-      full_name: user.user_metadata?.full_name ?? null,
-    },
-    { onConflict: 'id' },
-  )
-  if (error) throw error
 }
 
 async function ensureDefaultBunhouse({ userId }) {
@@ -133,7 +122,7 @@ export function Onboarding() {
 
     setSaving(true)
     try {
-      await ensureProfileExists({ user })
+      await ensureProfileExists(user)
 
       const bunhouseId = await ensureDefaultBunhouse({ userId: user.id })
       setActiveBunhouseId(bunhouseId)
