@@ -11,3 +11,13 @@ body {
   @apply bg-cream text-text-dark font-sans;
 }
 
+/* Safari: date/datetime fields have a large intrinsic min-width; without this they can spill past narrow columns */
+@layer base {
+  input[type='date'],
+  input[type='datetime-local'] {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+}
+

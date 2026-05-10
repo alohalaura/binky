@@ -105,7 +105,7 @@ export function Symptoms({ defaultOpen = false }) {
   const sortedLogs = useMemo(() => filteredLogs, [filteredLogs])
 
   return (
-    <main>
+    <main className="min-w-0">
       <h1 className="text-xl font-semibold">Symptoms</h1>
       <p className="mt-2 text-sm text-text-mid">
         Log what you’re seeing so you can spot patterns and share clear notes with your vet.
@@ -137,16 +137,16 @@ export function Symptoms({ defaultOpen = false }) {
           ) : null}
 
         {activeBunnyId && hasLogs ? (
-          <div className="mt-4">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-                <div className="sm:w-52">
+          <div className="mt-4 min-w-0 max-w-full">
+            <div className="flex min-w-0 max-w-full flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+              <div className="flex min-w-0 w-full flex-col gap-2 sm:flex-row sm:items-end sm:gap-2">
+                <div className="min-w-0 w-full sm:w-52 sm:shrink-0">
                   <div className="text-xs font-semibold text-text-dark">Body area</div>
                   <div className="relative">
                     <select
                       value={filters.bodyArea}
                       onChange={(e) => setFilters((f) => ({ ...f, bodyArea: e.target.value }))}
-                      className="mt-1 h-10 w-full appearance-none rounded-xl border border-lavender-mid/30 bg-warm-white px-3 pr-10 text-sm outline-none focus:border-lavender"
+                      className="mt-1 box-border min-h-[2.5rem] w-full min-w-0 max-w-full appearance-none rounded-xl border border-lavender-mid/30 bg-warm-white px-3 pr-10 text-[16px] outline-none focus:border-lavender sm:h-10 sm:text-sm"
                     >
                       {bodyAreaOptions.map((opt) => (
                         <option key={opt} value={opt}>
@@ -168,22 +168,22 @@ export function Symptoms({ defaultOpen = false }) {
                     </svg>
                   </div>
                 </div>
-                <div className="sm:w-40">
+                <div className="min-w-0 w-full max-w-full sm:w-40 sm:shrink-0">
                   <div className="text-xs font-semibold text-text-dark">From</div>
                   <input
                     type="date"
                     value={filters.from}
                     onChange={(e) => setFilters((f) => ({ ...f, from: e.target.value }))}
-                    className="mt-1 h-10 w-full rounded-xl border border-lavender-mid/30 bg-warm-white px-3 text-sm outline-none focus:border-lavender"
+                    className="mt-1 box-border block h-[2.75rem] w-full min-w-0 max-w-full rounded-xl border border-lavender-mid/30 bg-warm-white px-3 py-2 text-[16px] leading-normal outline-none focus:border-lavender sm:h-10 sm:text-sm sm:leading-none"
                   />
                 </div>
-                <div className="sm:w-40">
+                <div className="min-w-0 w-full max-w-full sm:w-40 sm:shrink-0">
                   <div className="text-xs font-semibold text-text-dark">To</div>
                   <input
                     type="date"
                     value={filters.to}
                     onChange={(e) => setFilters((f) => ({ ...f, to: e.target.value }))}
-                    className="mt-1 h-10 w-full rounded-xl border border-lavender-mid/30 bg-warm-white px-3 text-sm outline-none focus:border-lavender"
+                    className="mt-1 box-border block h-[2.75rem] w-full min-w-0 max-w-full rounded-xl border border-lavender-mid/30 bg-warm-white px-3 py-2 text-[16px] leading-normal outline-none focus:border-lavender sm:h-10 sm:text-sm sm:leading-none"
                   />
                 </div>
 
@@ -193,7 +193,7 @@ export function Symptoms({ defaultOpen = false }) {
               {filters.bodyArea !== 'all' || filters.from || filters.to ? (
                 <button
                   type="button"
-                  className="rounded-full border border-lavender-mid/30 bg-warm-white px-3 py-2 text-xs font-semibold text-text-dark hover:border-lavender"
+                  className="shrink-0 self-start rounded-full border border-lavender-mid/30 bg-warm-white px-3 py-2 text-xs font-semibold text-text-dark hover:border-lavender sm:self-end"
                   onClick={() => setFilters({ from: '', to: '', bodyArea: 'all' })}
                 >
                   Clear filters
