@@ -179,8 +179,8 @@ export function AddExpenseDrawer({
         onClose?.()
       }}
     >
-      <div className="flex h-full flex-col">
-        <div className="min-h-0 flex-1 overflow-auto px-5 py-5">
+      <div className="flex h-full min-w-0 flex-col">
+        <div className="min-h-0 min-w-0 flex-1 overflow-auto px-5 py-5">
           {error ? (
             <div className="mb-4 whitespace-pre-wrap rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
               {error}
@@ -194,7 +194,7 @@ export function AddExpenseDrawer({
                 type="date"
                 value={form.expense_date}
                 onChange={(e) => setForm((f) => ({ ...f, expense_date: e.target.value }))}
-                className="mt-1 h-12 w-full rounded-xl border border-lavender-mid/30 bg-warm-white px-4 text-sm outline-none focus:border-lavender"
+                className="mt-1 box-border h-12 w-full min-w-0 max-w-full rounded-xl border border-lavender-mid/30 bg-warm-white px-4 text-sm outline-none focus:border-lavender"
                 disabled={saving}
               />
             </div>

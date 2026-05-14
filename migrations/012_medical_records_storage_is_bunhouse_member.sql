@@ -1,11 +1,12 @@
--- Private bucket policies for medical record attachments.
--- Bucket id must match the app (`VITE_MEDICAL_RECORDS_BUCKET` or default `medical-records`).
--- Expected object path prefix: <bunhouseId>/... (first folder = bunhouse UUID for RLS).
+-- Medical record file uploads hit storage.objects RLS. Policies that use
+--   EXISTS (SELECT … FROM bunhouse_members …)
+-- run that subquery as the authenticated user, so bunhouse_members RLS applies
+-- and the check can fail even for valid members.
 --
--- Uses public.is_bunhouse_member (SECURITY DEFINER) so membership checks do not
--- run bunhouse_members RLS as the invoking user (which can block storage uploads).
+-- Use public.is_bunhouse_member (SECURITY DEFINER), same pattern as schema.sql
+-- helper comment: "avoid RLS policy recursion".
 --
--- Run in Supabase SQL Editor AFTER creating the bucket (keep it private).
+-- Run once in Supabase SQL Editor.
 
 drop policy if exists "medical records: select bunhouse" on storage.objects;
 drop policy if exists "medical records: insert bunhouse" on storage.objects;

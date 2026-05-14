@@ -3,12 +3,12 @@ import { format } from 'date-fns'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/authContext'
 import { useBunny } from '../hooks/useBunny'
-import { useBunhouse } from '../hooks/useBunhouse'
 import { useRecords } from '../hooks/useRecords'
 import { Card } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { AddRecordDrawer } from '../components/records/AddRecordDrawer'
 import { RECORD_CATEGORIES } from '../lib/constants'
+import { STORAGE_BUCKETS } from '../lib/storageBuckets'
 import { supabase } from '../lib/supabase'
 import { useQueryClient } from '@tanstack/react-query'
 import { Modal } from '../components/ui/Modal'
@@ -18,8 +18,17 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { FabPortalButton } from '../components/ui/FabPortalButton'
 import { useWeightLogs } from '../hooks/useWeightLogs'
 
-const MEDICAL_RECORDS_BUCKET = 'medical-records'
 const SIGNED_URL_TTL_SECONDS = 60 * 15
+
+function saveStepError(step, err) {
+  const msg =
+    (err &&
+      typeof err === 'object' &&
+      (err.message || err.msg || err.error_description || err.details || err.hint)) ||
+    (typeof err === 'string' ? err : '')
+  const cleaned = String(msg ?? '').trim()
+  return cleaned ? `${step}: ${cleaned}` : step
+}
 
 function isMissingTableError(err, tableName) {
   const msg = String(err?.message ?? '')
@@ -72,6 +81,22 @@ function sanitizeWeightKg(value) {
   const n = Number.parseFloat(raw)
   if (!Number.isFinite(n) || n <= 0) throw new Error('Enter a valid weight in kg.')
   return n * 1000
+}
+
+/** Storage RLS keys off the first path segment = this id; must match `bunnies.bunhouse_id`, not only UI state. */
+async function fetchBunnyBunhouseId(bunnyId) {
+  const { data, error } = await supabase
+    .from('bunnies')
+    .select('bunhouse_id')
+    .eq('id', bunnyId)
+    .maybeSingle()
+  if (error) throw error
+  if (!data?.bunhouse_id) {
+    throw new Error(
+      'This bunny is not linked to a bunhouse, so we cannot save visits or files. Try reloading the app.',
+    )
+  }
+  return data.bunhouse_id
 }
 
 function attachmentRows(r) {
@@ -164,7 +189,6 @@ export function Records({ defaultOpen = false }) {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { activeBunnyId } = useBunny()
-  const { activeBunhouseId } = useBunhouse()
   const { data: records = [], isLoading, error } = useRecords()
   const { data: weights = [] } = useWeightLogs()
   const queryClient = useQueryClient()
@@ -203,22 +227,29 @@ export function Records({ defaultOpen = false }) {
     return m
   }, [weights])
 
-  async function uploadFileToRecord({ recordId, file }) {
+  async function uploadFileToRecord({ recordId, file, bunhouseId }) {
     const ext = file.name?.split('.').pop()?.toLowerCase() || 'bin'
     const fileId =
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? crypto.randomUUID()
         : `${Date.now()}-${Math.random().toString(16).slice(2)}`
 
-    const path = `${activeBunhouseId}/${activeBunnyId}/medical/${recordId}/${fileId}.${ext}`
+    const path = `${bunhouseId}/${activeBunnyId}/medical/${recordId}/${fileId}.${ext}`
     const { error: uploadError } = await supabase.storage
-      .from(MEDICAL_RECORDS_BUCKET)
+      .from(STORAGE_BUCKETS.medicalRecords)
       .upload(path, file, {
         cacheControl: '3600',
         upsert: false,
         contentType: file.type || undefined,
       })
-    if (uploadError) throw uploadError
+    if (uploadError) {
+      throw new Error(
+        saveStepError(
+          `Uploading “${file?.name || 'file'}” (bucket: ${STORAGE_BUCKETS.medicalRecords})`,
+          uploadError,
+        ),
+      )
+    }
     return path
   }
 
@@ -233,6 +264,8 @@ export function Records({ defaultOpen = false }) {
     setSaving(true)
 
     try {
+      const bunhouseId = await fetchBunnyBunhouseId(activeBunnyId)
+
       const costItems = Array.isArray(form?.cost_items) ? form.cost_items : []
       const hasInvoice = costItems.length > 0
       const currency = String(form?.visit_cost_currency ?? 'PHP').trim() || 'PHP'
@@ -258,7 +291,7 @@ export function Records({ defaultOpen = false }) {
         .insert(insertPayload)
         .select(recordSelect)
         .single()
-      if (insertError) throw insertError
+      if (insertError) throw new Error(saveStepError('Saving visit', insertError))
 
       const recordId = inserted?.id
 
@@ -275,7 +308,7 @@ export function Records({ defaultOpen = false }) {
             },
             { onConflict: 'source_record_id' },
           )
-          if (wErr) throw wErr
+          if (wErr) throw new Error(saveStepError('Saving weight for this visit', wErr))
         }
       }
 
@@ -290,20 +323,27 @@ export function Records({ defaultOpen = false }) {
           if (isMissingTableError(invErr, 'medical_record_cost_items')) {
             // DB isn't migrated yet: keep the total on medical_records, but skip invoice rows.
           } else {
-            throw invErr
+            throw new Error(saveStepError('Saving invoice lines', invErr))
           }
         }
       }
 
       for (const pf of form.pending_files ?? []) {
         if (!pf?.file) continue
-        const path = await uploadFileToRecord({ recordId, file: pf.file })
+        const path = await uploadFileToRecord({ recordId, file: pf.file, bunhouseId })
         const { error: rowErr } = await supabase.from('medical_record_files').insert({
           medical_record_id: recordId,
           storage_path: path,
           file_kind: pf.file_kind,
         })
-        if (rowErr) throw rowErr
+        if (rowErr) {
+          throw new Error(
+            saveStepError(
+              `Saving file metadata for “${pf.file?.name || 'file'}”`,
+              rowErr,
+            ),
+          )
+        }
       }
 
       await queryClient.invalidateQueries({
@@ -368,6 +408,8 @@ export function Records({ defaultOpen = false }) {
     setSaving(true)
 
     try {
+      const bunhouseId = await fetchBunnyBunhouseId(activeBunnyId)
+
       const hadVisitModel =
         Boolean(editTarget?.visit_type) || attachmentRows(editTarget).length > 0
       const addingTyped = (form.pending_files?.length ?? 0) > 0
@@ -397,7 +439,7 @@ export function Records({ defaultOpen = false }) {
         .from('medical_records')
         .update(updatePayload)
         .eq('id', form.id)
-      if (updateError) throw updateError
+      if (updateError) throw new Error(saveStepError('Updating visit', updateError))
 
       // Optional: upsert weight log entry tied to this visit.
       {
@@ -407,7 +449,7 @@ export function Records({ defaultOpen = false }) {
             .from('weight_logs')
             .delete()
             .eq('source_record_id', form.id)
-          if (delWErr) throw delWErr
+          if (delWErr) throw new Error(saveStepError('Clearing visit weight', delWErr))
         } else if (form?.record_date) {
           const { error: wErr } = await supabase.from('weight_logs').upsert(
             {
@@ -418,7 +460,7 @@ export function Records({ defaultOpen = false }) {
             },
             { onConflict: 'source_record_id' },
           )
-          if (wErr) throw wErr
+          if (wErr) throw new Error(saveStepError('Saving weight for this visit', wErr))
         }
       }
 
@@ -430,7 +472,7 @@ export function Records({ defaultOpen = false }) {
           .eq('medical_record_id', form.id)
         if (delInvErr) {
           if (!isMissingTableError(delInvErr, 'medical_record_cost_items')) {
-            throw delInvErr
+            throw new Error(saveStepError('Removing old invoice lines', delInvErr))
           }
         } else if (hasInvoice) {
           const payload = costItems.map((it) => ({
@@ -441,7 +483,7 @@ export function Records({ defaultOpen = false }) {
           const { error: invErr } = await supabase.from('medical_record_cost_items').insert(payload)
           if (invErr) {
             if (!isMissingTableError(invErr, 'medical_record_cost_items')) {
-              throw invErr
+              throw new Error(saveStepError('Saving invoice lines', invErr))
             }
           }
         }
@@ -454,18 +496,25 @@ export function Records({ defaultOpen = false }) {
           .update({ file_kind: u.file_kind })
           .eq('id', u.id)
           .eq('medical_record_id', form.id)
-        if (kindErr) throw kindErr
+        if (kindErr) throw new Error(saveStepError('Updating attachment type', kindErr))
       }
 
       for (const pf of form.pending_files ?? []) {
         if (!pf?.file) continue
-        const path = await uploadFileToRecord({ recordId: form.id, file: pf.file })
+        const path = await uploadFileToRecord({ recordId: form.id, file: pf.file, bunhouseId })
         const { error: rowErr } = await supabase.from('medical_record_files').insert({
           medical_record_id: form.id,
           storage_path: path,
           file_kind: pf.file_kind,
         })
-        if (rowErr) throw rowErr
+        if (rowErr) {
+          throw new Error(
+            saveStepError(
+              `Saving file metadata for “${pf.file?.name || 'file'}”`,
+              rowErr,
+            ),
+          )
+        }
       }
 
       await queryClient.invalidateQueries({
@@ -491,16 +540,16 @@ export function Records({ defaultOpen = false }) {
     }
   }
 
-  async function removeRecordFolder({ recordId }) {
-    const prefix = `${activeBunhouseId}/${activeBunnyId}/medical/${recordId}`
+  async function removeRecordFolder({ recordId, bunhouseId }) {
+    const prefix = `${bunhouseId}/${activeBunnyId}/medical/${recordId}`
 
     let offset = 0
     const fullPaths = []
     while (true) {
       const { data, error: listError } = await supabase.storage
-        .from(MEDICAL_RECORDS_BUCKET)
+        .from(STORAGE_BUCKETS.medicalRecords)
         .list(prefix, { limit: 100, offset })
-      if (listError) throw listError
+      if (listError) throw new Error(saveStepError('Listing visit files in storage', listError))
 
       const batch = (data ?? []).filter((x) => x?.name).map((x) => `${prefix}/${x.name}`)
       fullPaths.push(...batch)
@@ -510,9 +559,9 @@ export function Records({ defaultOpen = false }) {
 
     if (fullPaths.length) {
       const { error: removeError } = await supabase.storage
-        .from(MEDICAL_RECORDS_BUCKET)
+        .from(STORAGE_BUCKETS.medicalRecords)
         .remove(fullPaths)
-      if (removeError) throw removeError
+      if (removeError) throw new Error(saveStepError('Removing visit files from storage', removeError))
     }
   }
 
@@ -525,6 +574,8 @@ export function Records({ defaultOpen = false }) {
     setSaving(true)
 
     try {
+      const bunhouseId = await fetchBunnyBunhouseId(activeBunnyId)
+
       // Unlink dependent rows that reference this medical record.
       // (FKs on prescriptions/expenses use default RESTRICT, so deletes would fail otherwise.)
       const { error: unlinkRxErr } = await supabase
@@ -539,7 +590,7 @@ export function Records({ defaultOpen = false }) {
         .eq('record_id', record.id)
       if (unlinkExpenseErr) throw unlinkExpenseErr
 
-      await removeRecordFolder({ recordId: record.id })
+      await removeRecordFolder({ recordId: record.id, bunhouseId })
 
       // If this record contributed a weight entry, delete it too.
       const { error: delWeightErr } = await supabase
@@ -591,9 +642,9 @@ export function Records({ defaultOpen = false }) {
 
     try {
       const { error: removeErr } = await supabase.storage
-        .from(MEDICAL_RECORDS_BUCKET)
+        .from(STORAGE_BUCKETS.medicalRecords)
         .remove([path])
-      if (removeErr) throw removeErr
+      if (removeErr) throw new Error(saveStepError('Removing file from storage', removeErr))
 
       if (legacy) {
         const { error: patchErr } = await supabase
@@ -660,7 +711,7 @@ export function Records({ defaultOpen = false }) {
         for (const path of paths) {
           if (!path) continue
           const { data, error: signedErr } = await supabase.storage
-            .from(MEDICAL_RECORDS_BUCKET)
+            .from(STORAGE_BUCKETS.medicalRecords)
             .createSignedUrl(path, SIGNED_URL_TTL_SECONDS)
           if (signedErr) throw signedErr
           if (data?.signedUrl) {
@@ -738,8 +789,15 @@ export function Records({ defaultOpen = false }) {
         </div>
       ) : null}
       {saveError ? (
-        <div className="mt-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          {saveError}
+        <div className="mt-3 flex gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          <div className="min-w-0 flex-1">{saveError}</div>
+          <button
+            type="button"
+            className="shrink-0 self-start rounded-full border border-red-200 bg-warm-white px-3 py-1 text-xs font-semibold text-red-800 hover:bg-red-100"
+            onClick={() => setSaveError('')}
+          >
+            Dismiss
+          </button>
         </div>
       ) : null}
 
@@ -749,7 +807,10 @@ export function Records({ defaultOpen = false }) {
             title="No records yet"
             description="Save vet visits, lab results, and documents so everything stays easy to find."
             actionLabel="Add first visit"
-            onAction={() => setDrawerOpen(true)}
+            onAction={() => {
+              setSaveError('')
+              setDrawerOpen(true)
+            }}
           />
         </div>
       ) : null}
@@ -760,7 +821,10 @@ export function Records({ defaultOpen = false }) {
             title="Nothing in this category yet"
             description="Try another tab, or add a new record to start building your vault."
             actionLabel="Add a record"
-            onAction={() => setDrawerOpen(true)}
+            onAction={() => {
+              setSaveError('')
+              setDrawerOpen(true)
+            }}
           />
         </div>
       ) : null}
@@ -800,6 +864,7 @@ export function Records({ defaultOpen = false }) {
                           type="button"
                           className="rounded-full border border-lavender-mid/30 bg-warm-white px-3 py-1 text-xs font-semibold text-text-dark hover:border-lavender"
                           onClick={() => {
+                            setSaveError('')
                             setEditTarget(r)
                             setDrawerOpen(true)
                           }}
@@ -832,7 +897,13 @@ export function Records({ defaultOpen = false }) {
       ) : null}
 
       {!drawerOpen && !viewTarget ? (
-        <FabPortalButton onClick={() => setDrawerOpen(true)} aria-label="Add new record">
+        <FabPortalButton
+          onClick={() => {
+            setSaveError('')
+            setDrawerOpen(true)
+          }}
+          aria-label="Add new record"
+        >
           <svg className="mx-auto h-6 w-6" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path d="M10 4a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 10 4Z" />
           </svg>
@@ -843,6 +914,7 @@ export function Records({ defaultOpen = false }) {
         key={editTarget?.id ? `edit-${editTarget.id}` : 'create'}
         open={drawerOpen}
         onClose={() => {
+          setSaveError('')
           setDrawerOpen(false)
           setEditTarget(null)
           if (defaultOpen) navigate('/records', { replace: true })
@@ -886,6 +958,7 @@ export function Records({ defaultOpen = false }) {
         filesError={viewFilesError}
         onEdit={() => {
           if (!viewTarget) return
+          setSaveError('')
           setViewTarget(null)
           setEditTarget(viewTarget)
           setDrawerOpen(true)

@@ -569,8 +569,8 @@ export function Home() {
           setWeightSheetOpen(false)
         }}
       >
-        <div className="flex h-full flex-col">
-          <div className="min-h-0 flex-1 overflow-y-auto p-5">
+        <div className="flex h-full min-w-0 flex-col">
+          <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-5">
             <div className="grid gap-4">
               <div>
                 <div className="text-xs font-semibold text-text-mid">Weight (kg)</div>

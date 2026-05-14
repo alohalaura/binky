@@ -124,7 +124,7 @@ export function PrescriptionForm({
   }
 
   return (
-    <form className="h-full overflow-y-auto p-5" onSubmit={handleSubmit}>
+    <form className="h-full min-w-0 overflow-y-auto p-5" onSubmit={handleSubmit}>
       {!activeBunnyId ? (
         <div className="rounded-2xl border border-lavender-mid/30 bg-warm-white p-4 text-sm text-text-mid">
           Choose an active bunny first.
@@ -144,8 +144,8 @@ export function PrescriptionForm({
           />
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
+        <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+          <div className="min-w-0">
             <div className="text-xs font-semibold text-text-mid">Dosage</div>
             <Input
               className="mt-2"
@@ -155,7 +155,7 @@ export function PrescriptionForm({
               disabled={busy}
             />
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="text-xs font-semibold text-text-mid">Frequency</div>
             <Input
               className="mt-2"
@@ -167,8 +167,8 @@ export function PrescriptionForm({
           </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
+        <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+          <div className="min-w-0">
             <div className="text-xs font-semibold text-text-mid">Start date</div>
             <Input
               className="mt-2"
@@ -178,7 +178,7 @@ export function PrescriptionForm({
               disabled={busy}
             />
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="text-xs font-semibold text-text-mid">End date</div>
             <Input
               className="mt-2"

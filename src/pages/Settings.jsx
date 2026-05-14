@@ -1015,8 +1015,8 @@ export function Settings() {
           setCreateModalOpen(false)
         }}
       >
-        <div className="flex h-full flex-col">
-          <div className="min-h-0 flex-1 overflow-y-auto p-5">
+        <div className="flex h-full min-w-0 flex-col">
+          <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-5">
             <form className="grid gap-5" onSubmit={onCreateBunny} noValidate>
             {createError ? (
               <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -1220,8 +1220,8 @@ export function Settings() {
           setEditModalOpen(false)
         }}
       >
-        <div className="flex h-full flex-col">
-          <div className="min-h-0 flex-1 overflow-y-auto p-5">
+        <div className="flex h-full min-w-0 flex-col">
+          <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-5">
             {editError ? (
               <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 {editError}

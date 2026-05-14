@@ -256,8 +256,8 @@ export function AddRecordDrawer({
         onClose?.()
       }}
     >
-      <div className="flex h-full flex-col">
-        <div className="min-h-0 flex-1 overflow-y-auto p-5">
+      <div className="flex h-full min-w-0 flex-col">
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-5">
           {!activeBunnyId ? (
             <div className="rounded-2xl border border-lavender-mid/30 bg-warm-white p-4 text-sm text-text-mid">
               Choose an active bunny in Settings first.
@@ -346,34 +346,14 @@ export function AddRecordDrawer({
             <div className="text-xs font-semibold text-text-mid">Invoice (optional)</div>
 
             <div className="mt-2 rounded-2xl border border-lavender-mid/30 bg-warm-white p-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                <div className="min-w-0">
-                  <div className="text-[11px] font-semibold text-text-mid">Currency</div>
-                  <div className="mt-1 inline-flex h-12 items-center rounded-xl border border-lavender-mid/30 bg-warm-white px-4 text-sm font-semibold text-text-dark">
-                    {currencyCode}
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  className="rounded-full border border-lavender-mid/30 bg-warm-white px-3 py-2 text-xs font-semibold text-text-dark hover:border-lavender"
-                  onClick={() => setInvoiceItems((items) => [...items, newInvoiceLine()])}
-                  disabled={busy}
-                >
-                  Add line item
-                </button>
-              </div>
-
-              <div className="mt-3 space-y-2">
+              <div className="space-y-3">
                 {invoiceItems.map((it, idx) => (
-                  <div
-                    key={it.localKey}
-                    className="grid grid-cols-1 gap-2 sm:grid-cols-12 sm:items-center"
-                  >
-                    <div className="sm:col-span-8">
+                  <div key={it.localKey} className="space-y-2">
+                    <div className="flex items-center gap-2">
                       <Input
+                        className="min-w-0 flex-1"
                         type="text"
-                        placeholder={`Description (e.g. X-ray fee)`}
+                        placeholder="Description (e.g. X-ray fee)"
                         value={it.description}
                         onChange={(e) =>
                           setInvoiceItems((items) =>
@@ -385,28 +365,9 @@ export function AddRecordDrawer({
                         disabled={busy}
                         aria-label={`Invoice item ${idx + 1} description`}
                       />
-                    </div>
-                    <div className="sm:col-span-4 sm:flex sm:items-center sm:justify-end sm:gap-2">
-                      <div className="sm:w-[9.5rem]">
-                        <Input
-                          type="text"
-                          inputMode="decimal"
-                          placeholder="0.00"
-                          value={it.amount}
-                          onChange={(e) =>
-                            setInvoiceItems((items) =>
-                              items.map((x) =>
-                                x.localKey === it.localKey ? { ...x, amount: e.target.value } : x,
-                              ),
-                            )
-                          }
-                          disabled={busy}
-                          aria-label={`Invoice item ${idx + 1} amount`}
-                        />
-                      </div>
                       <button
                         type="button"
-                        className="grid h-12 w-12 shrink-0 place-items-center rounded-xl text-text-mid hover:bg-lavender-light hover:text-text-dark"
+                        className="grid h-12 w-12 shrink-0 place-items-center rounded-xl border border-lavender-mid/20 text-text-mid hover:border-lavender-mid/40 hover:bg-lavender-light hover:text-text-dark"
                         onClick={() =>
                           setInvoiceItems((items) =>
                             items.length <= 1
@@ -420,16 +381,49 @@ export function AddRecordDrawer({
                         <svg
                           viewBox="0 0 20 20"
                           fill="currentColor"
-                          className="h-6 w-6"
+                          className="h-5 w-5"
                           aria-hidden="true"
                         >
                           <path d="M6.28 5.22a.75.75 0 0 1 1.06 0L10 7.88l2.66-2.66a.75.75 0 1 1 1.06 1.06L11.06 8.94l2.66 2.66a.75.75 0 1 1-1.06 1.06L10 10l-2.66 2.66a.75.75 0 1 1-1.06-1.06l2.66-2.66-2.66-2.66a.75.75 0 0 1 0-1.06Z" />
                         </svg>
                       </button>
                     </div>
+                    <div className="relative min-w-0 flex-1 sm:max-w-[12rem] sm:flex-initial sm:w-[9.5rem]">
+                      <span
+                        className="pointer-events-none absolute left-4 top-1/2 z-[1] -translate-y-1/2 text-sm font-semibold tabular-nums text-text-mid"
+                        aria-hidden="true"
+                      >
+                        {currencyCode}
+                      </span>
+                      <Input
+                        className="!pl-[3.25rem]"
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="0.00"
+                        value={it.amount}
+                        onChange={(e) =>
+                          setInvoiceItems((items) =>
+                            items.map((x) =>
+                              x.localKey === it.localKey ? { ...x, amount: e.target.value } : x,
+                            ),
+                          )
+                        }
+                        disabled={busy}
+                        aria-label={`Invoice item ${idx + 1} amount (${currencyCode})`}
+                      />
+                    </div>
                   </div>
                 ))}
               </div>
+
+              <button
+                type="button"
+                className="mt-4 w-full rounded-full border border-lavender-mid/30 bg-warm-white py-3 text-xs font-semibold text-text-dark hover:border-lavender"
+                onClick={() => setInvoiceItems((items) => [...items, newInvoiceLine()])}
+                disabled={busy}
+              >
+                Add line item
+              </button>
             </div>
           </div>
 

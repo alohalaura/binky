@@ -458,8 +458,8 @@ export function WeightLog() {
           setEditTarget(null)
         }}
       >
-        <div className="flex h-full flex-col">
-          <div className="min-h-0 flex-1 overflow-y-auto p-5">
+        <div className="flex h-full min-w-0 flex-col">
+          <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-5">
             {!activeBunnyId ? (
               <div className="rounded-2xl border border-lavender-mid/30 bg-warm-white p-4 text-sm text-text-mid">
                 Choose an active bunny in the header first.

@@ -43,8 +43,8 @@ export function SymptomDetailsDrawer({
 
   return (
     <Drawer title="Symptom details" open={open} onClose={onClose}>
-      <div className="flex h-full min-h-0 flex-col">
-        <div className="min-h-0 flex-1 overflow-y-auto p-5">
+      <div className="flex h-full min-h-0 min-w-0 flex-col">
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-5">
           <div className="space-y-4">
             <div className="flex flex-wrap items-center gap-2">
               <div className="shrink-0 rounded-full bg-lavender-light px-3 py-1 text-xs font-semibold text-lavender-dark">
