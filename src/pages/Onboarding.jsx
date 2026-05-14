@@ -10,6 +10,11 @@ import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
 import { FileInput } from '../components/ui/FileInput'
 import { RadioOption } from '../components/ui/RadioOption'
+import {
+  FavoriteHangoutSelect,
+  FavoriteSnackSelect,
+} from '../components/bunny/BunnyProfileExtraSelects'
+import { FAVORITE_SNACK_SELECT_OTHER } from '../lib/bunnyProfileExtras'
 import { STORAGE_BUCKETS } from '../lib/storageBuckets'
 import { ensureProfileExists } from '../lib/authProfile'
 
@@ -61,6 +66,9 @@ export function Onboarding() {
     date_of_birth: '',
     sex: '',
     is_neutered: '',
+    favorite_snack: '',
+    favorite_snack_custom: '',
+    favorite_hangout: '',
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -74,6 +82,21 @@ export function Onboarding() {
     const sex = state.sex
     const neuteredChoice = state.is_neutered
 
+    const snackSelect = String(state.favorite_snack ?? '').trim()
+    const snackCustom = String(state.favorite_snack_custom ?? '').trim()
+    let favorite_snack = null
+    if (snackSelect === FAVORITE_SNACK_SELECT_OTHER) {
+      favorite_snack = snackCustom || null
+    } else if (snackSelect) {
+      favorite_snack = snackSelect
+    }
+    const snackOtherError =
+      snackSelect === FAVORITE_SNACK_SELECT_OTHER && !snackCustom
+        ? 'Please describe their favorite treat.'
+        : ''
+
+    const favorite_hangout = String(state.favorite_hangout ?? '').trim() || null
+
     const missing = []
     if (!name) missing.push('Name')
     if (!breed) missing.push('Breed')
@@ -83,14 +106,17 @@ export function Onboarding() {
       missing.push('Neutered / spayed')
 
     return {
-      ok: missing.length === 0,
+      ok: missing.length === 0 && !snackOtherError,
       missing,
+      snackOtherError,
       payload: {
         name,
         breed,
         date_of_birth,
         sex,
         is_neutered: neuteredChoice === 'yes',
+        favorite_snack,
+        favorite_hangout,
       },
     }
   }, [state])
@@ -114,6 +140,7 @@ export function Onboarding() {
         state.is_neutered === 'yes' || state.is_neutered === 'no'
           ? ''
           : 'Please choose yes or no.',
+      favorite_snack_other: validation.snackOtherError || '',
     }
     setFieldErrors(nextFieldErrors)
 
@@ -136,7 +163,7 @@ export function Onboarding() {
         .from('bunnies')
         .insert(payload)
         .select(
-          'id, bunhouse_id, owner_id, name, breed, date_of_birth, sex, is_neutered, photo_url, created_at',
+          'id, bunhouse_id, owner_id, name, breed, date_of_birth, sex, is_neutered, favorite_snack, favorite_hangout, photo_url, created_at',
         )
         .single()
 
@@ -359,6 +386,41 @@ export function Onboarding() {
                   {fieldErrors.is_neutered}
                 </div>
               ) : null}
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <FavoriteSnackSelect
+                id="onboard_favorite_snack"
+                value={state.favorite_snack}
+                onChange={(v) => {
+                  setState((s) => ({
+                    ...s,
+                    favorite_snack: v,
+                    favorite_snack_custom:
+                      v === FAVORITE_SNACK_SELECT_OTHER ? s.favorite_snack_custom : '',
+                  }))
+                  if (v !== FAVORITE_SNACK_SELECT_OTHER && fieldErrors.favorite_snack_other) {
+                    setFieldErrors((fe) => ({ ...fe, favorite_snack_other: '' }))
+                  }
+                }}
+                customValue={state.favorite_snack_custom}
+                onCustomChange={(v) => {
+                  setState((s) => ({ ...s, favorite_snack_custom: v }))
+                  if (fieldErrors.favorite_snack_other) {
+                    setFieldErrors((fe) => ({ ...fe, favorite_snack_other: '' }))
+                  }
+                }}
+                otherError={fieldErrors.favorite_snack_other}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <FavoriteHangoutSelect
+                id="onboard_favorite_hangout"
+                value={state.favorite_hangout}
+                onChange={(v) => setState((s) => ({ ...s, favorite_hangout: v }))}
+              />
             </div>
           </div>
 

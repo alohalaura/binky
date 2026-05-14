@@ -11,6 +11,7 @@ import {
   estimatedHumanAgeYears,
   safeDateLabel,
 } from '../lib/bunnyPresentation.js'
+import { labelForFavoriteHangout, labelForFavoriteSnack } from '../lib/bunnyProfileExtras'
 import { toSentenceCase } from '../lib/text'
 import { IconArrowLeft } from '@tabler/icons-react'
 
@@ -176,6 +177,12 @@ export function BunnyProfile() {
           </div>
           <Field label="Sex">{sexLabel(bunny.sex)}</Field>
           <Field label="Spayed / neutered">{neuteredLabel(bunny.is_neutered)}</Field>
+          <Field label="Favorite snack">
+            {labelForFavoriteSnack(bunny.favorite_snack) || '—'}
+          </Field>
+          <Field label="Favorite hangout">
+            {labelForFavoriteHangout(bunny.favorite_hangout) || '—'}
+          </Field>
           {bunny.created_at ? (
             <Field label="Profile created">
               {(() => {

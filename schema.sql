@@ -73,6 +73,8 @@ create table if not exists bunnies (
   date_of_birth date,
   sex text check (sex in ('male','female','unknown')),
   is_neutered boolean default false,
+  favorite_snack text,
+  favorite_hangout text,
   photo_url text,
   created_at timestamptz default now()
 );

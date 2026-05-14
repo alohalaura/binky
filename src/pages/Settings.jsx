@@ -15,6 +15,14 @@ import { FileInput } from '../components/ui/FileInput'
 import { Drawer } from '../components/ui/Drawer'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { RadioOption } from '../components/ui/RadioOption'
+import {
+  FavoriteHangoutSelect,
+  FavoriteSnackSelect,
+} from '../components/bunny/BunnyProfileExtraSelects'
+import {
+  FAVORITE_SNACK_SELECT_OTHER,
+  splitFavoriteSnackForForm,
+} from '../lib/bunnyProfileExtras'
 import { STORAGE_BUCKETS } from '../lib/storageBuckets'
 import { exportAllDataToPdf } from '../lib/exportAllDataPdf'
 import { VISIT_COST_CURRENCIES } from '../lib/constants'
@@ -72,6 +80,21 @@ function getProfileValidation(state) {
   const sex = state.sex
   const neuteredChoice = state.is_neutered
 
+  const snackSelect = String(state.favorite_snack ?? '').trim()
+  const snackCustom = String(state.favorite_snack_custom ?? '').trim()
+  let favorite_snack = null
+  if (snackSelect === FAVORITE_SNACK_SELECT_OTHER) {
+    favorite_snack = snackCustom || null
+  } else if (snackSelect) {
+    favorite_snack = snackSelect
+  }
+  const snackOtherError =
+    snackSelect === FAVORITE_SNACK_SELECT_OTHER && !snackCustom
+      ? 'Please describe their favorite treat.'
+      : ''
+
+  const favorite_hangout = String(state.favorite_hangout ?? '').trim() || null
+
   const missing = []
   if (!name) missing.push('Name')
   if (!breed) missing.push('Breed')
@@ -81,14 +104,17 @@ function getProfileValidation(state) {
     missing.push('Neutered / spayed')
 
   return {
-    ok: missing.length === 0,
+    ok: missing.length === 0 && !snackOtherError,
     missing,
+    snackOtherError,
     payload: {
       name,
       breed,
       date_of_birth,
       sex,
       is_neutered: neuteredChoice === 'yes',
+      favorite_snack,
+      favorite_hangout,
     },
   }
 }
@@ -107,8 +133,13 @@ function editStateFor(bunny) {
       date_of_birth: '',
       sex: '',
       is_neutered: '',
+      favorite_snack: '',
+      favorite_snack_custom: '',
+      favorite_hangout: '',
     }
   }
+
+  const snack = splitFavoriteSnackForForm(bunny.favorite_snack)
 
   return {
     name: bunny.name ?? '',
@@ -117,6 +148,9 @@ function editStateFor(bunny) {
     sex: bunny.sex ?? '',
     is_neutered:
       bunny.is_neutered === true ? 'yes' : bunny.is_neutered === false ? 'no' : '',
+    favorite_snack: snack.select,
+    favorite_snack_custom: snack.custom,
+    favorite_hangout: bunny.favorite_hangout ?? '',
   }
 }
 
@@ -212,6 +246,9 @@ export function Settings() {
     date_of_birth: '',
     sex: '',
     is_neutered: '',
+    favorite_snack: '',
+    favorite_snack_custom: '',
+    favorite_hangout: '',
   })
   const [createPhotoFile, setCreatePhotoFile] = useState(null)
   const [createError, setCreateError] = useState('')
@@ -234,9 +271,13 @@ export function Settings() {
     date_of_birth: '',
     sex: '',
     is_neutered: '',
+    favorite_snack: '',
+    favorite_snack_custom: '',
+    favorite_hangout: '',
   })
   const [editPhotoFile, setEditPhotoFile] = useState(null)
   const [editError, setEditError] = useState('')
+  const [editSnackOtherError, setEditSnackOtherError] = useState('')
   const [editSaving, setEditSaving] = useState(false)
   const editPhotoPreviewUrl = useMemo(() => {
     if (!editPhotoFile) return ''
@@ -345,6 +386,7 @@ export function Settings() {
         return
       }
       setEditError('')
+      setEditSnackOtherError('')
       setEditPhotoFile(null)
       setEditState(editStateFor(target))
       setEditTargetId(target.id)
@@ -361,6 +403,9 @@ export function Settings() {
       date_of_birth: '',
       sex: '',
       is_neutered: '',
+      favorite_snack: '',
+      favorite_snack_custom: '',
+      favorite_hangout: '',
     })
     setCreatePhotoFile(null)
     setCreateFieldErrors({})
@@ -373,6 +418,7 @@ export function Settings() {
     setEditPhotoFile(null)
     setEditPhotoSignedUrl('')
     setEditError('')
+    setEditSnackOtherError('')
   }
 
   async function createBunny({ state, photoFile }) {
@@ -385,7 +431,7 @@ export function Settings() {
       .from('bunnies')
       .insert({ bunhouse_id: bunhouseId, ...validation.payload })
       .select(
-        'id, bunhouse_id, owner_id, name, breed, date_of_birth, sex, is_neutered, photo_url, created_at',
+        'id, bunhouse_id, owner_id, name, breed, date_of_birth, sex, is_neutered, favorite_snack, favorite_hangout, photo_url, created_at',
       )
       .single()
     if (insertError) throw insertError
@@ -433,6 +479,7 @@ export function Settings() {
         createState.is_neutered === 'yes' || createState.is_neutered === 'no'
           ? ''
           : 'Please choose yes or no.',
+      favorite_snack_other: validation.snackOtherError || '',
     }
     setCreateFieldErrors(nextFieldErrors)
     if (Object.values(nextFieldErrors).some(Boolean)) return
@@ -456,9 +503,13 @@ export function Settings() {
     if (!user?.id || !editTargetId) return
 
     setEditError('')
+    setEditSnackOtherError('')
     const validation = getProfileValidation(editState)
     if (!validation.ok) {
-      setEditError(`Please complete: ${validation.missing.join(', ')}`)
+      if (validation.snackOtherError) setEditSnackOtherError(validation.snackOtherError)
+      if (validation.missing.length) {
+        setEditError(`Please complete: ${validation.missing.join(', ')}`)
+      }
       return
     }
 
@@ -496,6 +547,7 @@ export function Settings() {
         queryKey: ['bunnies', user.id, activeBunhouseId ?? null],
       })
       setEditPhotoFile(null)
+      setEditSnackOtherError('')
       setEditModalOpen(false)
     } catch (err) {
       setEditError(err?.message || 'Failed to save bunny')
@@ -702,6 +754,7 @@ export function Settings() {
                     className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-lavender-mid/30 bg-warm-white text-text-dark"
                     onClick={() => {
                       setEditError('')
+                      setEditSnackOtherError('')
                       setEditPhotoFile(null)
                       setEditState(editStateFor(bunny))
                       setEditTargetId(bunny.id)
@@ -1192,6 +1245,39 @@ export function Settings() {
                   </div>
                 ) : null}
               </div>
+
+              <div className="sm:col-span-2">
+                <FavoriteSnackSelect
+                  id="create_favorite_snack"
+                  value={createState.favorite_snack}
+                  onChange={(v) => {
+                    setCreateState((s) => ({
+                      ...s,
+                      favorite_snack: v,
+                      favorite_snack_custom:
+                        v === FAVORITE_SNACK_SELECT_OTHER ? s.favorite_snack_custom : '',
+                    }))
+                    if (v !== FAVORITE_SNACK_SELECT_OTHER && createFieldErrors.favorite_snack_other) {
+                      setCreateFieldErrors((fe) => ({ ...fe, favorite_snack_other: '' }))
+                    }
+                  }}
+                  customValue={createState.favorite_snack_custom}
+                  onCustomChange={(v) => {
+                    setCreateState((s) => ({ ...s, favorite_snack_custom: v }))
+                    if (createFieldErrors.favorite_snack_other) {
+                      setCreateFieldErrors((fe) => ({ ...fe, favorite_snack_other: '' }))
+                    }
+                  }}
+                  otherError={createFieldErrors.favorite_snack_other}
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <FavoriteHangoutSelect
+                  id="create_favorite_hangout"
+                  value={createState.favorite_hangout}
+                  onChange={(v) => setCreateState((s) => ({ ...s, favorite_hangout: v }))}
+                />
+              </div>
             </div>
 
             <button type="submit" className="hidden" aria-hidden="true" tabIndex={-1} />
@@ -1337,6 +1423,37 @@ export function Settings() {
                       No
                     </RadioOption>
                   </div>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <FavoriteSnackSelect
+                    id="edit_favorite_snack"
+                    value={editState.favorite_snack}
+                    onChange={(v) => {
+                      setEditState((s) => ({
+                        ...s,
+                        favorite_snack: v,
+                        favorite_snack_custom:
+                          v === FAVORITE_SNACK_SELECT_OTHER ? s.favorite_snack_custom : '',
+                      }))
+                      if (v !== FAVORITE_SNACK_SELECT_OTHER && editSnackOtherError) {
+                        setEditSnackOtherError('')
+                      }
+                    }}
+                    customValue={editState.favorite_snack_custom}
+                    onCustomChange={(v) => {
+                      setEditState((s) => ({ ...s, favorite_snack_custom: v }))
+                      if (editSnackOtherError) setEditSnackOtherError('')
+                    }}
+                    otherError={editSnackOtherError}
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <FavoriteHangoutSelect
+                    id="edit_favorite_hangout"
+                    value={editState.favorite_hangout}
+                    onChange={(v) => setEditState((s) => ({ ...s, favorite_hangout: v }))}
+                  />
                 </div>
               </div>
 

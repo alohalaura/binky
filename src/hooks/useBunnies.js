@@ -7,7 +7,7 @@ async function fetchBunnies({ bunhouseId }) {
   const { data, error } = await supabase
     .from('bunnies')
     .select(
-      'id, bunhouse_id, owner_id, name, breed, date_of_birth, sex, is_neutered, photo_url, created_at',
+      'id, bunhouse_id, owner_id, name, breed, date_of_birth, sex, is_neutered, favorite_snack, favorite_hangout, photo_url, created_at',
     )
     .eq('bunhouse_id', bunhouseId)
     .order('created_at', { ascending: true })

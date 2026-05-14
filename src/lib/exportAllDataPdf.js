@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { labelForFavoriteHangout, labelForFavoriteSnack } from './bunnyProfileExtras'
 
 function escapeHtml(input) {
   return String(input ?? '')
@@ -63,6 +64,8 @@ function pageHtml({ userEmail, exportedAt, bunnies, byBunnyId }) {
           ${kv('Birthday', fmtDate(b.date_of_birth))}
           ${kv('Sex', b.sex || '—')}
           ${kv('Neutered / spayed', b.is_neutered ? 'Yes' : 'No')}
+          ${kv('Favorite snack', labelForFavoriteSnack(b.favorite_snack) || '—')}
+          ${kv('Favorite hangout', labelForFavoriteHangout(b.favorite_hangout) || '—')}
         </div>
       `
 
@@ -228,7 +231,7 @@ export async function exportAllDataToPdf({ userId, email } = {}) {
   const { data: bunnies, error: bunnyError } = await supabase
     .from('bunnies')
     .select(
-      'id, bunhouse_id, owner_id, name, breed, date_of_birth, sex, is_neutered, photo_url, created_at',
+      'id, bunhouse_id, owner_id, name, breed, date_of_birth, sex, is_neutered, favorite_snack, favorite_hangout, photo_url, created_at',
     )
     .in('bunhouse_id', bunhouseIds.length ? bunhouseIds : ['00000000-0000-0000-0000-000000000000'])
     .order('created_at', { ascending: true })
