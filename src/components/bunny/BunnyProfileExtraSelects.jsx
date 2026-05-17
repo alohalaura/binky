@@ -36,7 +36,7 @@ export function FavoriteSnackSelect({
   otherError = '',
 }) {
   return (
-    <div>
+    <div className="space-y-6">
       <SelectShell
         id={id}
         label="Favorite snack"
@@ -54,7 +54,7 @@ export function FavoriteSnackSelect({
       </SelectShell>
 
       {value === FAVORITE_SNACK_SELECT_OTHER ? (
-        <div className="mt-3">
+        <div>
           <label htmlFor={`${id}_custom`} className="text-sm font-medium text-text-dark">
             Describe their treat
           </label>

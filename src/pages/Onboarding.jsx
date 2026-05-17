@@ -14,6 +14,7 @@ import {
   FavoriteHangoutSelect,
   FavoriteSnackSelect,
 } from '../components/bunny/BunnyProfileExtraSelects'
+import { IconArrowLeft } from '@tabler/icons-react'
 import { FAVORITE_SNACK_SELECT_OTHER } from '../lib/bunnyProfileExtras'
 import { STORAGE_BUCKETS } from '../lib/storageBuckets'
 import { ensureProfileExists } from '../lib/authProfile'
@@ -54,7 +55,7 @@ async function ensureDefaultBunhouse({ userId }) {
 }
 
 export function Onboarding() {
-  const { user } = useAuth()
+  const { user, signOut } = useAuth()
   const { setActiveBunnyId } = useBunny()
   const { setActiveBunhouseId } = useBunhouse()
   const queryClient = useQueryClient()
@@ -120,6 +121,16 @@ export function Onboarding() {
       },
     }
   }, [state])
+
+  async function onBack() {
+    if (saving) return
+    const { error: signOutError } = await signOut()
+    if (signOutError) {
+      setError(signOutError.message || 'Could not sign out.')
+      return
+    }
+    navigate('/login', { replace: true })
+  }
 
   async function onCreate(e) {
     e.preventDefault()
@@ -207,6 +218,16 @@ export function Onboarding() {
 
   return (
     <main>
+      <button
+        type="button"
+        onClick={onBack}
+        disabled={saving}
+        className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-lavender-dark hover:text-lavender disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        <IconArrowLeft className="h-4 w-4 shrink-0" aria-hidden />
+        Back
+      </button>
+
       <h1 className="font-display text-2xl font-semibold text-text-dark">
         Welcome to Binky Labs
       </h1>
@@ -217,7 +238,7 @@ export function Onboarding() {
       <Card className="mt-6">
         <div className="text-lg font-semibold">Create your bunny’s profile</div>
 
-        <form className="mt-4 grid gap-3" onSubmit={onCreate} noValidate>
+        <form className="mt-4 grid gap-6" onSubmit={onCreate} noValidate>
           {error ? (
             <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               {error}
@@ -389,40 +410,34 @@ export function Onboarding() {
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <FavoriteSnackSelect
-                id="onboard_favorite_snack"
-                value={state.favorite_snack}
-                onChange={(v) => {
-                  setState((s) => ({
-                    ...s,
-                    favorite_snack: v,
-                    favorite_snack_custom:
-                      v === FAVORITE_SNACK_SELECT_OTHER ? s.favorite_snack_custom : '',
-                  }))
-                  if (v !== FAVORITE_SNACK_SELECT_OTHER && fieldErrors.favorite_snack_other) {
-                    setFieldErrors((fe) => ({ ...fe, favorite_snack_other: '' }))
-                  }
-                }}
-                customValue={state.favorite_snack_custom}
-                onCustomChange={(v) => {
-                  setState((s) => ({ ...s, favorite_snack_custom: v }))
-                  if (fieldErrors.favorite_snack_other) {
-                    setFieldErrors((fe) => ({ ...fe, favorite_snack_other: '' }))
-                  }
-                }}
-                otherError={fieldErrors.favorite_snack_other}
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <FavoriteHangoutSelect
-                id="onboard_favorite_hangout"
-                value={state.favorite_hangout}
-                onChange={(v) => setState((s) => ({ ...s, favorite_hangout: v }))}
-              />
-            </div>
-          </div>
+          <FavoriteSnackSelect
+            id="onboard_favorite_snack"
+            value={state.favorite_snack}
+            onChange={(v) => {
+              setState((s) => ({
+                ...s,
+                favorite_snack: v,
+                favorite_snack_custom:
+                  v === FAVORITE_SNACK_SELECT_OTHER ? s.favorite_snack_custom : '',
+              }))
+              if (v !== FAVORITE_SNACK_SELECT_OTHER && fieldErrors.favorite_snack_other) {
+                setFieldErrors((fe) => ({ ...fe, favorite_snack_other: '' }))
+              }
+            }}
+            customValue={state.favorite_snack_custom}
+            onCustomChange={(v) => {
+              setState((s) => ({ ...s, favorite_snack_custom: v }))
+              if (fieldErrors.favorite_snack_other) {
+                setFieldErrors((fe) => ({ ...fe, favorite_snack_other: '' }))
+              }
+            }}
+            otherError={fieldErrors.favorite_snack_other}
+          />
+          <FavoriteHangoutSelect
+            id="onboard_favorite_hangout"
+            value={state.favorite_hangout}
+            onChange={(v) => setState((s) => ({ ...s, favorite_hangout: v }))}
+          />
 
           <Button className="w-full" disabled={saving} type="submit">
             {saving ? 'Creating…' : 'Create your bunny’s profile'}

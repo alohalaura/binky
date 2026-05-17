@@ -1070,14 +1070,14 @@ export function Settings() {
       >
         <div className="flex h-full min-w-0 flex-col">
           <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-5">
-            <form className="grid gap-5" onSubmit={onCreateBunny} noValidate>
+            <form className="grid gap-6" onSubmit={onCreateBunny} noValidate>
             {createError ? (
               <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 {createError}
               </div>
             ) : null}
 
-            <div className="grid gap-5 sm:grid-cols-2">
+            <div className="grid gap-6 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <div className="text-sm font-medium text-text-dark">Profile photo</div>
                 <div className="mt-3 flex items-center gap-3">
@@ -1314,7 +1314,7 @@ export function Settings() {
               </div>
             ) : null}
 
-            <form className="grid gap-5" onSubmit={onSaveBunny} noValidate>
+            <form className="grid gap-6" onSubmit={onSaveBunny} noValidate>
               <div>
                 <div className="text-sm font-medium text-text-dark">Profile photo</div>
                 <div className="mt-3 flex items-center gap-3">
@@ -1334,7 +1334,7 @@ export function Settings() {
                 </div>
               </div>
 
-              <div className="grid gap-5 sm:grid-cols-2">
+              <div className="grid gap-6 sm:grid-cols-2">
                 <div className="sm:col-span-2">
                   <div className="text-sm font-medium text-text-dark">Name</div>
                   <div className="mt-2">
